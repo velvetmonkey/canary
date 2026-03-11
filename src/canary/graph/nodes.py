@@ -15,12 +15,14 @@ from canary.detection.store import DocumentStore
 from canary.fetchers.eurlex import EurLexFetcher
 from canary.graph.state import CANARYState
 from canary.output.schema import generate_change_report
+from canary.output.vault import VaultWriter
 
 logger = logging.getLogger(__name__)
 
 # Module-level singletons (set by graph builder)
 _fetcher: EurLexFetcher | None = None
 _store: DocumentStore | None = None
+_vault_writer: VaultWriter | None = None
 
 
 def set_fetcher(fetcher: EurLexFetcher) -> None:
@@ -31,6 +33,11 @@ def set_fetcher(fetcher: EurLexFetcher) -> None:
 def set_store(store: DocumentStore) -> None:
     global _store
     _store = store
+
+
+def set_vault_writer(writer: VaultWriter) -> None:
+    global _vault_writer
+    _vault_writer = writer
 
 
 async def load_sources(state: CANARYState) -> dict:
@@ -195,3 +202,43 @@ async def output_results(state: CANARYState) -> dict:
     print(report_md)
 
     return {"report": report_md, "tags": tags}
+
+
+async def write_to_vault(state: CANARYState) -> dict:
+    """Write the change report to the Obsidian vault via Flywheel MCP."""
+    if not state.get("vault_enabled") or _vault_writer is None:
+        return {}
+
+    report = state.get("report")
+    source = state["current_source"]
+    run_id = state.get("run_id", "unknown")
+
+    # Only write vault reports for actual changes (not baselines or no-change)
+    if not state.get("changed") or not report:
+        return {}
+
+    vault_path = await _vault_writer.write_report(
+        report_md=report,
+        source_id=source["id"],
+        run_id=run_id,
+    )
+
+    if vault_path:
+        # Log to daily note
+        extraction = state.get("extraction")
+        change_count = len(extraction.changes) if extraction else 0
+        severity = "unknown"
+        if extraction:
+            if any(c.materiality == "high" for c in extraction.changes):
+                severity = "high"
+            elif any(c.materiality == "medium" for c in extraction.changes):
+                severity = "medium"
+            else:
+                severity = "low"
+
+        await _vault_writer.log_to_daily(
+            f"CANARY detected {change_count} {severity}-severity "
+            f"{source['label']} change(s) — see [[{vault_path}]]"
+        )
+
+    return {"vault_path": vault_path}

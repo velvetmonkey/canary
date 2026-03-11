@@ -19,6 +19,7 @@ class TestGraphCompilation:
         assert "extract_obligations" in node_names
         assert "verify_citations" in node_names
         assert "output_results" in node_names
+        assert "write_to_vault" in node_names
 
 
 class TestDetectChangeNode:

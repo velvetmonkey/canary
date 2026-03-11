@@ -20,8 +20,11 @@ cp .env.example .env
 ## Usage
 
 ```bash
-# Run the full pipeline
+# Run the full pipeline (console output)
 uv run python -m canary.scheduler
+
+# Run with vault integration (writes reports to Obsidian via Flywheel MCP)
+uv run python -m canary.scheduler --vault
 
 # Run tests (no LLM/network required)
 uv run pytest -m "not integration and not llm"
@@ -36,7 +39,7 @@ uv run ruff check src/ tests/
 ## Architecture
 
 ```
-fetch_source → detect_change → [if changed] → extract_obligations → verify_citations → output_results
+fetch_source → detect_change → [if changed] → extract_obligations → verify_citations → output_results → write_to_vault
 ```
 
 - **Fetcher**: httpx async client with rate limiting, retry, ETag caching
@@ -44,6 +47,7 @@ fetch_source → detect_change → [if changed] → extract_obligations → veri
 - **Extraction**: Claude Sonnet with Pydantic structured output
 - **Verification**: Mechanical citation checking (verbatim quote matching)
 - **Output**: JSON + Markdown change reports to console
+- **Vault**: Optional write to Obsidian via Flywheel MCP (langchain-mcp-adapters)
 
 ## Stack
 
@@ -52,3 +56,4 @@ fetch_source → detect_change → [if changed] → extract_obligations → veri
 - SQLite for document state + change history
 - Pydantic v2 structured output
 - httpx + tenacity for reliable fetching
+- langchain-mcp-adapters for Flywheel/Obsidian vault integration

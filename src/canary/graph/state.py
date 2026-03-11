@@ -39,4 +39,6 @@ class CANARYState(TypedDict, total=False):
 
     # Output
     report: str | None
+    vault_path: str | None
+    vault_enabled: bool
     errors: list[str]
