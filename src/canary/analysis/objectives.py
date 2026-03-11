@@ -85,7 +85,9 @@ async def _extract_single(
     model: str,
 ) -> tuple[ObjectiveExtraction, ObjectiveMetrics]:
     """Single-pass extraction (no chunking). Source text must fit in context."""
-    llm = ChatAnthropic(model=model, temperature=0, max_tokens=8192)
+    # ~400 tokens per objective + overhead for wrapper fields
+    max_tokens = min(max(count * 400 + 2000, 8192), 32768)
+    llm = ChatAnthropic(model=model, temperature=0, max_tokens=max_tokens)
     structured_llm = llm.with_structured_output(ObjectiveExtraction, include_raw=True)
 
     user_message = USER_PROMPT_TEMPLATE.format(
