@@ -125,8 +125,22 @@ async def extract_obligations(state: CANARYState) -> dict:
     if not diff_text:
         return {"extraction": None}
 
-    extraction, extraction_metrics = await extract_changes(diff_text, source_text)
+    try:
+        extraction, extraction_metrics = await extract_changes(diff_text, source_text)
+    except Exception as e:
+        logger.error("Extraction failed for %s: %s", celex_id, e)
+        return {
+            "extraction": None,
+            "extraction_metrics": None,
+            "errors": state.get("errors", []) + [f"Extraction error: {e}"],
+        }
+
     extraction.source_celex_id = celex_id
+
+    # Quality check: non-trivial diff but zero changes extracted
+    if diff_text.strip() and len(extraction.changes) == 0:
+        logger.warning("Extraction returned 0 changes for non-empty diff on %s", celex_id)
+
     return {"extraction": extraction, "extraction_metrics": extraction_metrics}
 
 
@@ -223,6 +237,10 @@ async def write_to_vault(state: CANARYState) -> dict:
         run_id=run_id,
     )
 
+    errors = []
+    if vault_path is None and state.get("changed"):
+        errors = state.get("errors", []) + ["Vault write failed for change report"]
+
     if vault_path:
         # Log to daily note
         extraction = state.get("extraction")
@@ -241,4 +259,7 @@ async def write_to_vault(state: CANARYState) -> dict:
             f"{source['label']} change(s) — see [[{vault_path}]]"
         )
 
-    return {"vault_path": vault_path}
+    result = {"vault_path": vault_path}
+    if errors:
+        result["errors"] = errors
+    return result
