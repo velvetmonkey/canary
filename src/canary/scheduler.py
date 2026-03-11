@@ -16,6 +16,7 @@ from canary.fetchers.eurlex import EurLexFetcher
 from canary.graph.graph import build_graph
 from canary.graph.nodes import set_fetcher, set_store, set_vault_writer
 from canary.graph.state import CANARYState
+from canary.output.schema import generate_objective_note
 from canary.output.vault import VaultWriter
 from canary.tracing import RunMetrics, configure_langsmith
 
@@ -143,16 +144,159 @@ async def run_canary(vault_enabled: bool = False) -> None:
     logger.info("CANARY run %s complete", run_id)
 
 
+async def run_extract_objectives(
+    source_id: str | None = None,
+    count: int = 10,
+    vault_enabled: bool = True,
+) -> None:
+    """Extract compliance objectives from a regulation and write to vault."""
+    from canary.analysis.objectives import extract_objectives
+
+    load_dotenv()
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+    run_id = f"obj-{uuid.uuid4().hex[:12]}"
+    configure_langsmith(run_id)
+
+    # Load sources
+    with open("config/sources.yaml") as f:
+        config = yaml.safe_load(f)
+
+    sources = config["sources"]
+    if source_id:
+        sources = [s for s in sources if s["id"] == source_id]
+        if not sources:
+            logger.error("Source '%s' not found in sources.yaml", source_id)
+            return
+
+    # Just process the first source for objective extraction
+    source = sources[0]
+    celex_id = source["celex_id"]
+
+    logger.info("Extracting %d objectives from %s (%s)", count, source["label"], celex_id)
+
+    # Fetch the document
+    fetcher = EurLexFetcher()
+    try:
+        text, _ = await fetcher.fetch_text(celex_id)
+    finally:
+        await fetcher.close()
+
+    if not text:
+        logger.error("Failed to fetch document")
+        return
+
+    logger.info("Fetched %d chars", len(text))
+
+    # Extract objectives via Claude
+    extraction, metrics = await extract_objectives(text, count=count)
+
+    logger.info(
+        "Extracted %d objectives — %s, %.1fs, %d/%d tokens",
+        len(extraction.objectives),
+        metrics.model,
+        metrics.duration_ms / 1000,
+        metrics.input_tokens,
+        metrics.output_tokens,
+    )
+
+    # Connect vault writer
+    vault_writer: VaultWriter | None = None
+    if vault_enabled:
+        vault_writer = VaultWriter()
+        await vault_writer.connect()
+
+    # Generate and write each objective note
+    for i, obj in enumerate(extraction.objectives, 1):
+        note_md = generate_objective_note(
+            objective=obj,
+            regulation_name=extraction.regulation_name,
+            celex_id=celex_id,
+            run_id=run_id,
+            source_text=text,
+        )
+
+        print(f"\n{'='*60}")
+        print(f"Objective {i}/{len(extraction.objectives)}: {obj.article} — {obj.title}")
+        print(f"  Type: {obj.obligation_type} | Materiality: {obj.materiality}")
+        print(f"  Who: {obj.who}")
+        print(f"  What: {obj.what}")
+
+        if vault_writer:
+            # Derive short regulation name from source id
+            reg_short = source["id"].lower()
+            path = await vault_writer.write_objective(note_md, obj.article, reg_short)
+            if path:
+                print(f"  Vault: {path}")
+
+    # Summary
+    print(f"\n{'='*60}")
+    print(f"Run: {run_id}")
+    print(f"Source: {source['label']} ({celex_id})")
+    print(f"Objectives: {len(extraction.objectives)}")
+    print(f"Tokens: {metrics.input_tokens} in / {metrics.output_tokens} out")
+    print(f"Duration: {metrics.duration_ms / 1000:.1f}s")
+
+    if vault_writer:
+        # Log summary to daily note
+        await vault_writer.log_to_daily(
+            f"CANARY extracted {len(extraction.objectives)} compliance objectives "
+            f"from {source['label']}"
+        )
+        await vault_writer.disconnect()
+
+
 def main() -> None:
     """CLI entry point."""
     parser = argparse.ArgumentParser(description="CANARY — ESG regulatory change monitor")
+    subparsers = parser.add_subparsers(dest="command")
+
+    # Default: run change detection (no subcommand needed)
     parser.add_argument(
         "--no-vault",
         action="store_true",
         help="Disable vault writes (console output only)",
     )
+
+    # extract-objectives subcommand
+    obj_parser = subparsers.add_parser(
+        "extract-objectives",
+        help="Extract compliance objectives from a regulation",
+    )
+    obj_parser.add_argument(
+        "--source",
+        type=str,
+        default=None,
+        help="Source ID from sources.yaml (default: first source)",
+    )
+    obj_parser.add_argument(
+        "--count",
+        type=int,
+        default=10,
+        help="Number of objectives to extract (default: 10)",
+    )
+    obj_parser.add_argument(
+        "--no-vault",
+        action="store_true",
+        help="Disable vault writes",
+    )
+
     args = parser.parse_args()
-    asyncio.run(run_canary(vault_enabled=not args.no_vault))
+
+    if args.command == "extract-objectives":
+        asyncio.run(
+            run_extract_objectives(
+                source_id=args.source,
+                count=args.count,
+                vault_enabled=not args.no_vault,
+            )
+        )
+    else:
+        asyncio.run(run_canary(vault_enabled=not args.no_vault))
 
 
 if __name__ == "__main__":

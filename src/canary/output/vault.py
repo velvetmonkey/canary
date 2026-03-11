@@ -117,6 +117,32 @@ class VaultWriter:
             logger.error("Failed to write report: %s", e)
             return None
 
+    async def write_objective(
+        self,
+        note_md: str,
+        article_ref: str,
+        regulation_short: str,
+    ) -> str | None:
+        """Write a compliance objective note to the vault.
+
+        Returns the path of the created note, or None on error.
+        """
+        # Sanitize article ref for filename: "Article 4(1)(a)" → "article-4-1-a"
+        safe_name = article_ref.lower().replace(" ", "-").replace("(", "-").replace(")", "")
+        safe_name = safe_name.replace("--", "-").rstrip("-")
+        note_path = f"work/compliance/objectives/{regulation_short}/{safe_name}.md"
+
+        try:
+            await self._call_tool(
+                "vault_create_note",
+                {"path": note_path, "content": note_md},
+            )
+            logger.info("Wrote objective to %s", note_path)
+            return note_path
+        except Exception as e:
+            logger.error("Failed to write objective: %s", e)
+            return None
+
     async def log_to_daily(self, message: str) -> None:
         """Append a log entry to today's daily note."""
         today = date.today().isoformat()
@@ -127,7 +153,7 @@ class VaultWriter:
                 "vault_add_to_section",
                 {
                     "path": daily_path,
-                    "heading": "Log",
+                    "section": "Log",
                     "content": message,
                     "format": "timestamp-bullet",
                 },

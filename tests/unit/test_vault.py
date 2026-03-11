@@ -90,7 +90,7 @@ class TestVaultWriter:
         await writer.log_to_daily("CANARY detected 1 change")
         mock_add.ainvoke.assert_called_once()
         call_args = mock_add.ainvoke.call_args[0][0]
-        assert call_args["heading"] == "Log"
+        assert call_args["section"] == "Log"
         assert "CANARY detected" in call_args["content"]
 
     async def test_log_to_daily_handles_error(self):

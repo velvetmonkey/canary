@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from canary.analysis.models import ExtractionResult
+from canary.analysis.models import ComplianceObjective, ExtractionResult
 from canary.analysis.verifier import VerificationReport
 
 
@@ -102,5 +102,69 @@ def generate_change_report(
             lines.append("")
             lines.append("Unverified citations require manual review.")
         lines.append("")
+
+    return "\n".join(lines)
+
+
+def generate_objective_note(
+    objective: ComplianceObjective,
+    regulation_name: str,
+    celex_id: str,
+    run_id: str,
+    source_text: str | None = None,
+) -> str:
+    """Generate a vault note for a single compliance objective."""
+    today = date.today().isoformat()
+
+    # Verify the quote exists in source text (normalize unicode dashes/spaces)
+    citation_status = "unverified"
+    if source_text:
+        import unicodedata
+
+        norm_source = unicodedata.normalize("NFKC", source_text).replace("\u2011", "-")
+        norm_quote = unicodedata.normalize("NFKC", objective.verbatim_quote).replace("\u2011", "-")
+        # Also try whitespace-collapsed comparison
+        norm_source_ws = " ".join(norm_source.split())
+        norm_quote_ws = " ".join(norm_quote.split())
+        if norm_quote in norm_source or norm_quote_ws in norm_source_ws:
+            citation_status = "verified"
+
+    lines = [
+        "---",
+        "type: compliance-objective",
+        f"regulation: {regulation_name}",
+        f"celex_id: {celex_id}",
+        f"article: \"{objective.article}\"",
+        f"obligation_type: {objective.obligation_type}",
+        f"materiality: {objective.materiality}",
+        "status: active",
+        f"extracted: {today}",
+        f"citation: {citation_status}",
+        f"source_url: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:{celex_id}",
+        f"canary_run_id: {run_id}",
+        "---",
+        "",
+        f"# {objective.article} — {objective.title}",
+        "",
+        "## Obligation",
+        "",
+        f"**Who:** {objective.who}",
+        f"**What:** {objective.what}",
+        f"**Where:** {objective.where}",
+    ]
+
+    if objective.deadline:
+        lines.append(f"**Deadline:** {objective.deadline}")
+
+    lines.extend([
+        f"**Materiality:** {objective.materiality}",
+        "",
+        "## Legal Basis",
+        "",
+        f"> {objective.verbatim_quote}",
+        "",
+        f"*{objective.article}, {regulation_name}* [{citation_status}]",
+        "",
+    ])
 
     return "\n".join(lines)
