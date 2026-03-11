@@ -89,12 +89,12 @@ def main() -> None:
     """CLI entry point."""
     parser = argparse.ArgumentParser(description="CANARY — ESG regulatory change monitor")
     parser.add_argument(
-        "--vault",
+        "--no-vault",
         action="store_true",
-        help="Write reports to Obsidian vault via Flywheel MCP",
+        help="Disable vault writes (console output only)",
     )
     args = parser.parse_args()
-    asyncio.run(run_canary(vault_enabled=args.vault))
+    asyncio.run(run_canary(vault_enabled=not args.no_vault))
 
 
 if __name__ == "__main__":

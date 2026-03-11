@@ -38,16 +38,16 @@ class VaultWriter:
 
     async def connect(self) -> None:
         """Connect to flywheel-memory MCP server and load tools."""
+        # Inherit parent env so node/PATH work, then overlay our settings
+        env = {**os.environ, "FLYWHEEL_VAULT": self._vault_path, "FLYWHEEL_PRESET": "writer"}
         self._client = MultiServerMCPClient(
             {
                 "flywheel": {
                     "command": "node",
                     "args": [self._server_path],
                     "transport": "stdio",
-                    "env": {
-                        "FLYWHEEL_VAULT": self._vault_path,
-                        "FLYWHEEL_PRESET": "writer",
-                    },
+                    "env": env,
+                    "cwd": self._vault_path,
                 }
             }
         )
@@ -56,11 +56,9 @@ class VaultWriter:
         logger.info("Connected to flywheel MCP — %d tools available", len(self._tools))
 
     async def disconnect(self) -> None:
-        """Disconnect from MCP server."""
-        if self._client:
-            await self._client.__aexit__(None, None, None)
-            self._client = None
-            self._tools = {}
+        """Clean up client reference. Sessions are per-tool-call, no persistent connection."""
+        self._client = None
+        self._tools = {}
 
     async def _call_tool(self, name: str, args: dict[str, Any]) -> Any:
         """Call a flywheel MCP tool by name."""
