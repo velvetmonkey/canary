@@ -1,8 +1,14 @@
 """SQLite document state store for change detection."""
 
+from __future__ import annotations
+
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from canary.tracing import RunMetrics
 
 SCHEMA_SQL = """\
 CREATE TABLE IF NOT EXISTS document_state (
@@ -22,6 +28,37 @@ CREATE TABLE IF NOT EXISTS change_log (
     diff_summary TEXT,
     materiality TEXT,
     canary_run_id TEXT
+);
+
+CREATE TABLE IF NOT EXISTS run_log (
+    run_id TEXT PRIMARY KEY,
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    duration_ms REAL,
+    sources_checked INTEGER DEFAULT 0,
+    changes_detected INTEGER DEFAULT 0,
+    baselines_stored INTEGER DEFAULT 0,
+    errors INTEGER DEFAULT 0,
+    extraction_tokens_in INTEGER DEFAULT 0,
+    extraction_tokens_out INTEGER DEFAULT 0,
+    summary_json TEXT
+);
+
+CREATE TABLE IF NOT EXISTS source_check_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id TEXT NOT NULL,
+    celex_id TEXT NOT NULL,
+    label TEXT NOT NULL,
+    status TEXT NOT NULL,
+    started_at TEXT,
+    duration_ms REAL,
+    hash TEXT,
+    change_count INTEGER DEFAULT 0,
+    citations_total INTEGER DEFAULT 0,
+    citations_verified INTEGER DEFAULT 0,
+    vault_path TEXT,
+    error TEXT,
+    FOREIGN KEY (run_id) REFERENCES run_log(run_id)
 );
 """
 
@@ -98,4 +135,65 @@ class DocumentStore:
             ).fetchall()
         return self.conn.execute(
             "SELECT * FROM change_log ORDER BY detected_at DESC"
+        ).fetchall()
+
+    # --- Run logging ---
+
+    def save_run(self, metrics: "RunMetrics") -> None:
+        """Persist a complete run and its source checks."""
+        import json
+
+        self.conn.execute(
+            "INSERT OR REPLACE INTO run_log "
+            "(run_id, started_at, completed_at, duration_ms, sources_checked, "
+            "changes_detected, baselines_stored, errors, extraction_tokens_in, "
+            "extraction_tokens_out, summary_json) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                metrics.run_id,
+                metrics.started_at,
+                metrics.completed_at,
+                metrics.duration_ms,
+                metrics.sources_checked,
+                metrics.changes_detected,
+                metrics.baselines_stored,
+                metrics.errors,
+                metrics.extraction_tokens_in,
+                metrics.extraction_tokens_out,
+                json.dumps(metrics.summary()),
+            ),
+        )
+
+        for sc in metrics.source_checks:
+            self.conn.execute(
+                "INSERT INTO source_check_log "
+                "(run_id, celex_id, label, status, started_at, duration_ms, hash, "
+                "change_count, citations_total, citations_verified, vault_path, error) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    metrics.run_id,
+                    sc.celex_id,
+                    sc.label,
+                    sc.status,
+                    datetime.now(timezone.utc).isoformat(),
+                    sc.duration_ms,
+                    sc.hash,
+                    sc.change_count,
+                    sc.citations_total,
+                    sc.citations_verified,
+                    sc.vault_path,
+                    sc.error,
+                ),
+            )
+
+        self.conn.commit()
+
+    def get_run_log(self, limit: int = 20) -> list[sqlite3.Row]:
+        return self.conn.execute(
+            "SELECT * FROM run_log ORDER BY started_at DESC LIMIT ?", (limit,)
+        ).fetchall()
+
+    def get_source_checks(self, run_id: str) -> list[sqlite3.Row]:
+        return self.conn.execute(
+            "SELECT * FROM source_check_log WHERE run_id = ? ORDER BY id", (run_id,)
         ).fetchall()

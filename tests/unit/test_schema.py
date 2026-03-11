@@ -1,0 +1,178 @@
+"""Tests for change report generation."""
+
+from canary.analysis.models import ExtractionResult, RegulatoryChange
+from canary.analysis.verifier import CitationResult, VerificationReport
+from canary.output.schema import generate_change_report
+
+
+def _make_source(celex_id="32019R2088", label="SFDR L1", source_id="SFDR-L1"):
+    return {"id": source_id, "celex_id": celex_id, "label": label, "fetcher": "eurlex", "priority": "critical"}
+
+
+def _make_change(materiality="high", change_type="amendment", confidence=0.9):
+    return RegulatoryChange(
+        change_type=change_type,
+        affected_articles=["Article 8(1)", "Article 9"],
+        materiality=materiality,
+        materiality_rationale="Expands disclosure scope significantly",
+        supporting_quotes=["shall disclose sustainability risks"],
+        source_section="Article 8",
+        confidence=confidence,
+    )
+
+
+def _make_extraction(changes=None, celex_id="32019R2088"):
+    if changes is None:
+        changes = [_make_change()]
+    return ExtractionResult(
+        changes=changes,
+        source_celex_id=celex_id,
+        summary="Amendment to SFDR disclosure requirements",
+    )
+
+
+def _make_verification(all_verified=True):
+    results = [CitationResult(quote="shall disclose sustainability risks", verified=all_verified, change_index=0)]
+    return VerificationReport(
+        results=results,
+        all_verified=all_verified,
+        unverified_count=0 if all_verified else 1,
+    )
+
+
+class TestGenerateChangeReport:
+    def test_contains_yaml_frontmatter(self):
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction(),
+            verification=_make_verification(),
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test-001",
+        )
+        assert report.startswith("---\n")
+        assert "type: regulatory-change" in report
+        assert "regulation: SFDR" in report
+        assert "jurisdiction: EU" in report
+        assert "canary_run_id: run-test-001" in report
+
+    def test_severity_high(self):
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction([_make_change(materiality="high")]),
+            verification=_make_verification(),
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert "severity: high" in report
+
+    def test_severity_medium(self):
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction([_make_change(materiality="medium")]),
+            verification=_make_verification(),
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert "severity: medium" in report
+
+    def test_severity_low(self):
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction([_make_change(materiality="low")]),
+            verification=_make_verification(),
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert "severity: low" in report
+
+    def test_contains_affected_articles(self):
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction(),
+            verification=_make_verification(),
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert "Article 8(1)" in report
+        assert "Article 9" in report
+
+    def test_contains_source_url(self):
+        report = generate_change_report(
+            source=_make_source(celex_id="32019R2088"),
+            extraction=_make_extraction(),
+            verification=_make_verification(),
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert "CELEX:32019R2088" in report
+
+    def test_verified_citations_labelled(self):
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction(),
+            verification=_make_verification(all_verified=True),
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert "[verified]" in report
+
+    def test_unverified_citations_labelled(self):
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction(),
+            verification=_make_verification(all_verified=False),
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert "[UNVERIFIED]" in report
+        assert "Unverified citations require manual review" in report
+
+    def test_no_extraction_fallback(self):
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=None,
+            verification=None,
+            tags=None,
+            run_id="run-test",
+        )
+        assert "Change detected but no structured extraction available" in report
+        assert "regulation: unknown" in report
+
+    def test_multiple_changes(self):
+        changes = [
+            _make_change(materiality="high", change_type="amendment"),
+            _make_change(materiality="medium", change_type="new_requirement"),
+        ]
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction(changes),
+            verification=None,
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert "### 1." in report
+        assert "### 2." in report
+        assert "severity: high" in report  # highest wins
+
+    def test_effective_date_included_when_present(self):
+        change = _make_change()
+        change.effective_date = "2026-06-01"
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction([change]),
+            verification=None,
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert "2026-06-01" in report
+
+    def test_citation_verification_section(self):
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction(),
+            verification=_make_verification(),
+            tags={"regulation": "SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert "## Citation Verification" in report
+        assert "1/1" in report

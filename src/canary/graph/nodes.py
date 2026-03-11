@@ -125,9 +125,9 @@ async def extract_obligations(state: CANARYState) -> dict:
     if not diff_text:
         return {"extraction": None}
 
-    extraction = await extract_changes(diff_text, source_text)
+    extraction, extraction_metrics = await extract_changes(diff_text, source_text)
     extraction.source_celex_id = celex_id
-    return {"extraction": extraction}
+    return {"extraction": extraction, "extraction_metrics": extraction_metrics}
 
 
 async def verify_citations_node(state: CANARYState) -> dict:

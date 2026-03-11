@@ -1,6 +1,6 @@
 """LangGraph state definition for CANARY pipeline."""
 
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from canary.analysis.models import ExtractionResult
 from canary.analysis.verifier import VerificationReport
@@ -34,6 +34,7 @@ class CANARYState(TypedDict, total=False):
 
     # Analysis stage
     extraction: ExtractionResult | None
+    extraction_metrics: Any | None
     verification: VerificationReport | None
     tags: dict | None
 

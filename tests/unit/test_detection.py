@@ -94,3 +94,81 @@ class TestDocumentStore:
         logs = store.get_change_log("TEST001")
         assert len(logs) == 2
         store.close()
+
+    def test_save_and_retrieve_run(self):
+        from canary.tracing import RunMetrics
+
+        store = DocumentStore(":memory:")
+        m = RunMetrics(run_id="test-run-001")
+        m.start()
+        sc = m.start_source("32019R2088", "SFDR L1")
+        sc.status = "no_change"
+        sc.hash = "abc123"
+        m.finish_source(sc)
+        m.finish()
+
+        store.save_run(m)
+
+        runs = store.get_run_log(5)
+        assert len(runs) == 1
+        assert runs[0]["run_id"] == "test-run-001"
+        assert runs[0]["sources_checked"] == 1
+        assert runs[0]["changes_detected"] == 0
+
+        checks = store.get_source_checks("test-run-001")
+        assert len(checks) == 1
+        assert checks[0]["celex_id"] == "32019R2088"
+        assert checks[0]["status"] == "no_change"
+        store.close()
+
+    def test_save_run_with_multiple_sources(self):
+        from canary.tracing import RunMetrics
+
+        store = DocumentStore(":memory:")
+        m = RunMetrics(run_id="test-run-002")
+        m.start()
+
+        sc1 = m.start_source("32019R2088", "SFDR L1")
+        sc1.status = "changed"
+        sc1.change_count = 2
+        sc1.citations_total = 3
+        sc1.citations_verified = 2
+        m.finish_source(sc1)
+
+        sc2 = m.start_source("32022R1288", "SFDR RTS")
+        sc2.status = "error"
+        sc2.error = "Timeout"
+        m.finish_source(sc2)
+
+        m.extraction_tokens_in = 5000
+        m.extraction_tokens_out = 800
+        m.finish()
+
+        store.save_run(m)
+
+        runs = store.get_run_log()
+        assert runs[0]["changes_detected"] == 1
+        assert runs[0]["errors"] == 1
+        assert runs[0]["extraction_tokens_in"] == 5000
+
+        checks = store.get_source_checks("test-run-002")
+        assert len(checks) == 2
+        assert checks[0]["citations_verified"] == 2
+        assert checks[1]["error"] == "Timeout"
+        store.close()
+
+    def test_run_log_contains_summary_json(self):
+        import json
+
+        from canary.tracing import RunMetrics
+
+        store = DocumentStore(":memory:")
+        m = RunMetrics(run_id="test-run-003")
+        m.start()
+        m.finish()
+        store.save_run(m)
+
+        runs = store.get_run_log()
+        summary = json.loads(runs[0]["summary_json"])
+        assert summary["run_id"] == "test-run-003"
+        store.close()

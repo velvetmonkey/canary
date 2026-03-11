@@ -1,8 +1,11 @@
 """LLM-based regulatory change extraction using Claude with structured output."""
 
 import logging
+import time
+from dataclasses import dataclass
 
 from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import AIMessage
 
 from canary.analysis.models import ExtractionResult
 
@@ -37,17 +40,28 @@ the source text as evidence.
 """
 
 
+@dataclass
+class ExtractionMetrics:
+    """Token usage and timing for a single extraction call."""
+
+    model: str
+    duration_ms: float
+    input_tokens: int
+    output_tokens: int
+
+
 async def extract_changes(
     diff_text: str,
     source_text: str,
     model: str = "claude-sonnet-4-6",
-) -> ExtractionResult:
+) -> tuple[ExtractionResult, ExtractionMetrics]:
     """Extract structured regulatory changes from a document diff.
 
     Uses Claude with Pydantic structured output to ensure schema compliance.
+    Returns (extraction_result, metrics).
     """
     llm = ChatAnthropic(model=model, temperature=0, max_tokens=4096)
-    structured_llm = llm.with_structured_output(ExtractionResult)
+    structured_llm = llm.with_structured_output(ExtractionResult, include_raw=True)
 
     user_message = USER_PROMPT_TEMPLATE.format(
         diff_text=diff_text,
@@ -55,11 +69,36 @@ async def extract_changes(
     )
 
     logger.info("Extracting changes via %s", model)
-    result = await structured_llm.ainvoke(
+    start = time.monotonic()
+
+    raw_result = await structured_llm.ainvoke(
         [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
         ]
     )
-    logger.info("Extracted %d changes", len(result.changes))
-    return result
+
+    duration_ms = (time.monotonic() - start) * 1000
+
+    # Extract token usage from raw response
+    raw_msg: AIMessage = raw_result["raw"]
+    usage = getattr(raw_msg, "usage_metadata", None) or {}
+    input_tokens = usage.get("input_tokens", 0) if isinstance(usage, dict) else 0
+    output_tokens = usage.get("output_tokens", 0) if isinstance(usage, dict) else 0
+
+    extraction: ExtractionResult = raw_result["parsed"]
+    extraction_metrics = ExtractionMetrics(
+        model=model,
+        duration_ms=duration_ms,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+    )
+
+    logger.info(
+        "Extracted %d changes in %.0fms (tokens: %d in, %d out)",
+        len(extraction.changes),
+        duration_ms,
+        input_tokens,
+        output_tokens,
+    )
+    return extraction, extraction_metrics
