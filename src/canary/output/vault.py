@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_MCP_SERVER = os.path.expanduser(
     "~/src/flywheel-memory/packages/mcp-server/dist/index.js"
 )
-DEFAULT_VAULT_PATH = os.path.expanduser("~/obsidian/Ben")
+DEFAULT_VAULT_PATH = os.path.expanduser("~/obsidian/Canary")
 
 
 class VaultWriter:
@@ -39,7 +39,12 @@ class VaultWriter:
     async def connect(self) -> None:
         """Connect to flywheel-memory MCP server and load tools."""
         # Inherit parent env so node/PATH work, then overlay our settings
-        env = {**os.environ, "FLYWHEEL_VAULT": self._vault_path, "FLYWHEEL_PRESET": "writer"}
+        env = {
+            **os.environ,
+            "VAULT_PATH": self._vault_path,
+            "PROJECT_PATH": self._vault_path,
+            "FLYWHEEL_PRESET": "writer",
+        }
         self._client = MultiServerMCPClient(
             {
                 "flywheel": {
