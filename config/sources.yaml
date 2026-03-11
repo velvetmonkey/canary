@@ -1,0 +1,18 @@
+sources:
+  - id: SFDR-L1
+    celex_id: "32019R2088"
+    label: "SFDR Level 1 — Reg (EU) 2019/2088"
+    fetcher: eurlex
+    priority: critical
+
+  - id: SFDR-RTS
+    celex_id: "32022R1288"
+    label: "SFDR RTS — Delegated Reg (EU) 2022/1288"
+    fetcher: eurlex
+    priority: critical
+
+  - id: SFDR-2-PROPOSAL
+    celex_id: "52025PC0841"
+    label: "SFDR 2.0 Amendment Proposal (Nov 2025)"
+    fetcher: eurlex
+    priority: high
