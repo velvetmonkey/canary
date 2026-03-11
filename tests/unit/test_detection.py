@@ -1,8 +1,10 @@
 """Tests for change detection: hasher, differ, store."""
 
+import pytest
+
 from canary.detection.differ import compute_diff, summarize_diff
 from canary.detection.hasher import compute_hash, normalize_text
-from canary.detection.store import DocumentStore
+from canary.detection.store import SCHEMA_VERSION, DocumentStore
 
 
 class TestHasher:
@@ -171,4 +173,73 @@ class TestDocumentStore:
         runs = store.get_run_log()
         summary = json.loads(runs[0]["summary_json"])
         assert summary["run_id"] == "test-run-003"
+        store.close()
+
+    def test_indices_exist(self):
+        store = DocumentStore(":memory:")
+        indices = store.conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%'"
+        ).fetchall()
+        index_names = {row["name"] for row in indices}
+        assert "idx_change_log_celex" in index_names
+        assert "idx_source_check_run" in index_names
+        assert "idx_run_log_started" in index_names
+        store.close()
+
+    def test_schema_version_stored(self):
+        store = DocumentStore(":memory:")
+        row = store.conn.execute("SELECT version FROM schema_version").fetchone()
+        assert row["version"] == SCHEMA_VERSION
+        store.close()
+
+    def test_schema_version_mismatch_raises(self, tmp_path):
+        db_path = tmp_path / "test.db"
+        store = DocumentStore(db_path)
+        store.conn.execute("UPDATE schema_version SET version = 999")
+        store.conn.commit()
+        store.close()
+
+        with pytest.raises(RuntimeError, match="schema version mismatch"):
+            DocumentStore(db_path)
+
+    def test_prune_deletes_old_runs(self):
+        from datetime import datetime, timedelta, timezone
+
+        from canary.tracing import RunMetrics
+
+        store = DocumentStore(":memory:")
+
+        # Create an old run
+        m = RunMetrics(run_id="old-run")
+        m.started_at = (datetime.now(timezone.utc) - timedelta(days=100)).isoformat()
+        m.completed_at = m.started_at
+        m.duration_ms = 100
+        store.save_run(m)
+
+        # Create a recent run
+        m2 = RunMetrics(run_id="new-run")
+        m2.start()
+        m2.finish()
+        store.save_run(m2)
+
+        result = store.prune(days=90)
+        assert result["runs_deleted"] == 1
+
+        runs = store.get_run_log()
+        assert len(runs) == 1
+        assert runs[0]["run_id"] == "new-run"
+        store.close()
+
+    def test_prune_with_no_old_data(self):
+        from canary.tracing import RunMetrics
+
+        store = DocumentStore(":memory:")
+        m = RunMetrics(run_id="recent-run")
+        m.start()
+        m.finish()
+        store.save_run(m)
+
+        result = store.prune(days=90)
+        assert result["runs_deleted"] == 0
+        assert result["source_checks_deleted"] == 0
         store.close()

@@ -14,6 +14,8 @@ from tenacity import (
     wait_exponential,
 )
 
+from canary.fetchers.base import BaseFetcher
+
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 logger = logging.getLogger(__name__)
@@ -26,7 +28,7 @@ USER_AGENT = "CANARY/1.0 regulatory-monitor (github.com/velvetmonkey/canary)"
 STRIP_SELECTORS = ["nav", "header", "footer", ".EurlexEmbedded"]
 
 
-class EurLexFetcher:
+class EurLexFetcher(BaseFetcher):
     """Async fetcher for EUR-Lex documents with rate limiting and ETag caching."""
 
     def __init__(self) -> None:

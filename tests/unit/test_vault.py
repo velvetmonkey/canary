@@ -110,3 +110,43 @@ class TestVaultWriter:
         await writer.disconnect()
         assert writer._client is None
         assert writer._tools == {}
+
+    async def test_write_objective_sanitizes_article_ref(self):
+        """Verify article refs with parens/spaces are sanitized for filenames."""
+        writer = VaultWriter()
+        mock_search = AsyncMock()
+        mock_search.ainvoke = AsyncMock(return_value={"results": []})
+        mock_create = AsyncMock()
+        mock_create.ainvoke = AsyncMock(return_value=None)
+        writer._tools = {"search": mock_search, "vault_create_note": mock_create}
+
+        path = await writer.write_objective("# Note", "Article 4(1)(a)", "sfdr-l1")
+        assert path is not None
+        assert "article-4-1-a" in path
+        assert "(" not in path
+        assert " " not in path
+
+    async def test_write_objective_complex_article_ref(self):
+        """Edge case: deeply nested article reference."""
+        writer = VaultWriter()
+        mock_create = AsyncMock()
+        mock_create.ainvoke = AsyncMock(return_value=None)
+        writer._tools = {"vault_create_note": mock_create}
+
+        path = await writer.write_objective("# Note", "Article 8(2)(b)(iii)", "sfdr-l1")
+        assert path is not None
+        assert "article-8-2-b-iii" in path
+        # No double dashes or trailing dashes
+        assert "--" not in path
+        assert not path.endswith("-")
+
+    async def test_write_objective_simple_article(self):
+        """Simple article ref without parens."""
+        writer = VaultWriter()
+        mock_create = AsyncMock()
+        mock_create.ainvoke = AsyncMock(return_value=None)
+        writer._tools = {"vault_create_note": mock_create}
+
+        path = await writer.write_objective("# Note", "Article 3", "sfdr-l1")
+        assert path is not None
+        assert "article-3" in path

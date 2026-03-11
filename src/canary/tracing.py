@@ -82,6 +82,11 @@ class RunMetrics:
             "extraction_tokens": {
                 "input": self.extraction_tokens_in,
                 "output": self.extraction_tokens_out,
+                "estimated_cost_usd": round(
+                    self.extraction_tokens_in * 3 / 1_000_000
+                    + self.extraction_tokens_out * 15 / 1_000_000,
+                    4,
+                ),
             },
             "sources": [
                 {

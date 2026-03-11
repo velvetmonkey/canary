@@ -2,15 +2,24 @@
 
 from __future__ import annotations
 
+import logging
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from canary.tracing import RunMetrics
 
+logger = logging.getLogger(__name__)
+
+SCHEMA_VERSION = 2
+
 SCHEMA_SQL = """\
+CREATE TABLE IF NOT EXISTS schema_version (
+    version INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS document_state (
     celex_id TEXT PRIMARY KEY,
     hash TEXT NOT NULL,
@@ -60,6 +69,10 @@ CREATE TABLE IF NOT EXISTS source_check_log (
     error TEXT,
     FOREIGN KEY (run_id) REFERENCES run_log(run_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_change_log_celex ON change_log(celex_id);
+CREATE INDEX IF NOT EXISTS idx_source_check_run ON source_check_log(run_id);
+CREATE INDEX IF NOT EXISTS idx_run_log_started ON run_log(started_at);
 """
 
 
@@ -70,6 +83,50 @@ class DocumentStore:
         self.conn = sqlite3.connect(str(db_path))
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA_SQL)
+        self._check_schema_version()
+
+    def _check_schema_version(self) -> None:
+        """Ensure schema version matches. Initialize if empty, fail if mismatched."""
+        row = self.conn.execute("SELECT version FROM schema_version").fetchone()
+        if row is None:
+            self.conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
+            self.conn.commit()
+        elif row["version"] != SCHEMA_VERSION:
+            raise RuntimeError(
+                f"Database schema version mismatch: expected {SCHEMA_VERSION}, "
+                f"got {row['version']}. Migrate or recreate the database."
+            )
+
+    def prune(self, days: int = 90) -> dict[str, int]:
+        """Delete run_log and source_check_log entries older than N days. Returns counts."""
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+
+        # Find old run IDs first
+        old_runs = self.conn.execute(
+            "SELECT run_id FROM run_log WHERE started_at < ?", (cutoff,)
+        ).fetchall()
+        old_run_ids = [r["run_id"] for r in old_runs]
+
+        source_checks_deleted = 0
+        if old_run_ids:
+            placeholders = ",".join("?" * len(old_run_ids))
+            cur = self.conn.execute(
+                f"DELETE FROM source_check_log WHERE run_id IN ({placeholders})",
+                old_run_ids,
+            )
+            source_checks_deleted = cur.rowcount
+
+        cur = self.conn.execute("DELETE FROM run_log WHERE started_at < ?", (cutoff,))
+        runs_deleted = cur.rowcount
+
+        self.conn.commit()
+        self.conn.execute("VACUUM")
+
+        logger.info(
+            "Pruned %d runs and %d source checks older than %d days",
+            runs_deleted, source_checks_deleted, days,
+        )
+        return {"runs_deleted": runs_deleted, "source_checks_deleted": source_checks_deleted}
 
     def close(self) -> None:
         self.conn.close()

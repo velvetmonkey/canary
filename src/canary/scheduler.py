@@ -13,6 +13,7 @@ import yaml
 from dotenv import load_dotenv
 
 from canary.detection.store import DocumentStore
+from canary.fetchers.base import BaseFetcher
 from canary.fetchers.eurlex import EurLexFetcher
 from canary.graph.graph import build_graph
 from canary.graph.nodes import set_fetcher, set_store, set_vault_writer
@@ -24,18 +25,54 @@ from canary.tracing import RunMetrics, configure_langsmith
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_CONFIG = "config/sources.yaml"
 
-async def run_canary(vault_enabled: bool = False) -> int:
+
+def _resolve_config(args_config: str | None) -> Path:
+    """Resolve config path from CLI arg, env var, or default."""
+    path_str = args_config or os.environ.get("CANARY_CONFIG") or DEFAULT_CONFIG
+    path = Path(path_str)
+    if not path.exists():
+        raise FileNotFoundError(f"Config file not found: {path}")
+    return path
+
+
+def _load_config(config_path: Path) -> dict:
+    """Load and validate sources config from YAML."""
+    try:
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        raise ValueError(f"Invalid YAML in {config_path}: {e}") from e
+
+    if not config or "sources" not in config:
+        raise ValueError(f"Config file {config_path} must contain a 'sources' key")
+    return config
+
+
+def _resolve_model(args_model: str | None) -> str:
+    """Resolve model from CLI arg, env var, or default."""
+    return args_model or os.environ.get("CANARY_MODEL") or "claude-sonnet-4-6"
+
+
+def _get_fetcher(fetcher_type: str) -> BaseFetcher:
+    """Factory for fetcher instances based on type string."""
+    if fetcher_type == "eurlex":
+        return EurLexFetcher()
+    raise ValueError(f"Unknown fetcher type: {fetcher_type!r}. Available: eurlex")
+
+
+async def run_canary(
+    vault_enabled: bool = False,
+    source_filter: str | None = None,
+    model: str = "claude-sonnet-4-6",
+    config_path: Path | None = None,
+) -> int:
     """Run the CANARY pipeline for all configured sources.
 
     Returns exit code: 0 = clean, 1 = warnings only, 2 = errors.
     """
     load_dotenv()
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
 
     run_id = f"run-{uuid.uuid4().hex[:12]}"
     issues = IssueCollector(run_id=run_id)
@@ -48,7 +85,8 @@ async def run_canary(vault_enabled: bool = False) -> int:
     metrics.start()
 
     logger.info(
-        "CANARY run %s starting (vault=%s, tracing=%s)", run_id, vault_enabled, tracing_enabled
+        "CANARY run %s starting (vault=%s, tracing=%s, model=%s)",
+        run_id, vault_enabled, tracing_enabled, model,
     )
 
     # Initialize components
@@ -56,7 +94,24 @@ async def run_canary(vault_enabled: bool = False) -> int:
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     store = DocumentStore(db_path)
-    fetcher = EurLexFetcher()
+
+    # Load config
+    if config_path is None:
+        config_path = _resolve_config(None)
+    config = _load_config(config_path)
+    sources = config["sources"]
+
+    # Filter sources if requested
+    if source_filter:
+        sources = [s for s in sources if s["id"] == source_filter]
+        if not sources:
+            logger.error("Source %r not found in config", source_filter)
+            store.close()
+            return 2
+
+    # Determine fetcher type from first source (all sources use same fetcher in a run)
+    fetcher_type = sources[0].get("fetcher", "eurlex")
+    fetcher = _get_fetcher(fetcher_type)
     vault_writer: VaultWriter | None = None
 
     set_store(store)
@@ -75,10 +130,6 @@ async def run_canary(vault_enabled: bool = False) -> int:
 
     graph = build_graph()
 
-    with open("config/sources.yaml") as f:
-        config = yaml.safe_load(f)
-
-    sources = config["sources"]
     logger.info("Processing %d sources", len(sources))
 
     try:
@@ -92,6 +143,7 @@ async def run_canary(vault_enabled: bool = False) -> int:
             initial_state: CANARYState = {
                 "current_source": source,
                 "run_id": run_id,
+                "model": model,
                 "vault_enabled": vault_enabled,
                 "errors": [],
             }
@@ -108,7 +160,6 @@ async def run_canary(vault_enabled: bool = False) -> int:
                     if extraction:
                         source_metrics.change_count = len(extraction.changes)
                     else:
-                        # Changed but no extraction — something went wrong
                         issues.warning(
                             "extract", celex_id,
                             "Change detected but extraction returned no results",
@@ -119,7 +170,6 @@ async def run_canary(vault_enabled: bool = False) -> int:
                         source_metrics.citations_verified = (
                             source_metrics.citations_total - verification.unverified_count
                         )
-                        # Flag low verification rates
                         if verification.unverified_count > 0:
                             issues.warning(
                                 "verify", celex_id,
@@ -170,21 +220,20 @@ async def run_canary(vault_enabled: bool = False) -> int:
         metrics.finish()
         store.save_run(metrics)
 
-        # Print run summary
+        # Print run summary (machine-readable JSON to stdout)
         summary = metrics.summary()
-        logger.info("--- Run Summary ---")
+        logger.info("Run complete: %d sources, %d changes, %d errors",
+                     summary["sources_checked"], summary["changes_detected"], summary["errors"])
         print(json.dumps(summary, indent=2))
 
-        # Write issues file and print summary
+        # Write issues file
         issues_path = issues.write()
         if issues_path:
-            print(json.dumps(issues.summary(), indent=2))
+            logger.info("Issues written to %s", issues_path)
 
         store.close()
         if vault_writer:
             await vault_writer.disconnect()
-
-    logger.info("CANARY run %s complete", run_id)
 
     if issues.has_errors:
         return 2
@@ -197,6 +246,8 @@ async def run_extract_objectives(
     source_id: str | None = None,
     count: int = 10,
     vault_enabled: bool = True,
+    model: str = "claude-sonnet-4-6",
+    config_path: Path | None = None,
 ) -> int:
     """Extract compliance objectives from a regulation and write to vault.
 
@@ -206,18 +257,14 @@ async def run_extract_objectives(
 
     load_dotenv()
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
-
     run_id = f"obj-{uuid.uuid4().hex[:12]}"
     issues = IssueCollector(run_id=run_id)
     configure_langsmith(run_id)
 
     # Load sources
-    with open("config/sources.yaml") as f:
-        config = yaml.safe_load(f)
+    if config_path is None:
+        config_path = _resolve_config(None)
+    config = _load_config(config_path)
 
     sources = config["sources"]
     if source_id:
@@ -233,7 +280,8 @@ async def run_extract_objectives(
     logger.info("Extracting %d objectives from %s (%s)", count, source["label"], celex_id)
 
     # Fetch the document
-    fetcher = EurLexFetcher()
+    fetcher_type = source.get("fetcher", "eurlex")
+    fetcher = _get_fetcher(fetcher_type)
     try:
         text, _ = await fetcher.fetch_text(celex_id)
     except Exception as e:
@@ -253,23 +301,25 @@ async def run_extract_objectives(
 
     # Extract objectives via Claude
     try:
-        extraction, obj_metrics = await extract_objectives(text, count=count)
+        extraction, obj_metrics = await extract_objectives(text, count=count, model=model)
     except Exception as e:
         issues.error("extract", celex_id, f"Objective extraction failed: {e}", detail=str(type(e)))
         issues.write()
         return 2
 
+    chunks_info = f", {obj_metrics.chunks} chunks" if obj_metrics.chunks > 1 else ""
     logger.info(
-        "Extracted %d objectives — %s, %.1fs, %d/%d tokens",
+        "Extracted %d objectives — %s, %.1fs, %d/%d tokens%s",
         len(extraction.objectives),
         obj_metrics.model,
         obj_metrics.duration_ms / 1000,
         obj_metrics.input_tokens,
         obj_metrics.output_tokens,
+        chunks_info,
     )
 
-    # Quality checks on extraction
-    if len(extraction.objectives) < count:
+    # Quality checks: only warn about count if single-pass (chunked may exceed count)
+    if obj_metrics.chunks == 1 and len(extraction.objectives) < count:
         issues.warning(
             "extract", celex_id,
             f"Requested {count} objectives but only got {len(extraction.objectives)}",
@@ -317,31 +367,38 @@ async def run_extract_objectives(
                 f"{obj.article} — low materiality objective may not be relevant",
             )
 
-        print(f"\n{'='*60}")
-        print(f"Objective {i}/{len(extraction.objectives)}: {obj.article} — {obj.title}")
-        print(f"  Type: {obj.obligation_type} | Materiality: {obj.materiality}")
-        print(f"  Who: {obj.who}")
-        print(f"  What: {obj.what}")
+        logger.info(
+            "Objective %d/%d: %s — %s (type=%s, materiality=%s)",
+            i, len(extraction.objectives), obj.article, obj.title,
+            obj.obligation_type, obj.materiality,
+        )
 
         if vault_writer:
             reg_short = source["id"].lower()
             path = await vault_writer.write_objective(note_md, obj.article, reg_short)
             if path:
-                print(f"  Vault: {path}")
+                logger.info("  Written to vault: %s", path)
             else:
                 issues.error(
                     "vault", celex_id,
                     f"Failed to write {obj.article} to vault",
                 )
 
-    # Summary
-    print(f"\n{'='*60}")
-    print(f"Run: {run_id}")
-    print(f"Source: {source['label']} ({celex_id})")
-    print(f"Objectives: {len(extraction.objectives)}")
-    print(f"Citations: {verified_count}/{verified_count + unverified_count} verified")
-    print(f"Tokens: {obj_metrics.input_tokens} in / {obj_metrics.output_tokens} out")
-    print(f"Duration: {obj_metrics.duration_ms / 1000:.1f}s")
+    # Summary (machine-readable JSON to stdout)
+    summary = {
+        "run_id": run_id,
+        "source": source["label"],
+        "celex_id": celex_id,
+        "source_chars": len(text),
+        "chunks": obj_metrics.chunks,
+        "objectives": len(extraction.objectives),
+        "citations_verified": verified_count,
+        "citations_total": verified_count + unverified_count,
+        "tokens_in": obj_metrics.input_tokens,
+        "tokens_out": obj_metrics.output_tokens,
+        "duration_s": round(obj_metrics.duration_ms / 1000, 1),
+    }
+    print(json.dumps(summary, indent=2))
 
     if vault_writer:
         await vault_writer.log_to_daily(
@@ -353,7 +410,7 @@ async def run_extract_objectives(
     # Write issues file
     issues_path = issues.write()
     if issues_path:
-        print(json.dumps(issues.summary(), indent=2))
+        logger.info("Issues written to %s", issues_path)
 
     if issues.has_errors:
         return 2
@@ -428,16 +485,60 @@ def run_status() -> int:
     return 0
 
 
+def run_prune(days: int = 90) -> int:
+    """Prune old run data from the database."""
+    load_dotenv()
+
+    db_path = Path(os.environ.get("CANARY_DB_PATH", "data/canary.db"))
+    if not db_path.exists():
+        print("No database found.")
+        return 1
+
+    store = DocumentStore(db_path)
+    result = store.prune(days=days)
+    print(json.dumps(result, indent=2))
+    store.close()
+    return 0
+
+
 def main() -> None:
     """CLI entry point."""
     parser = argparse.ArgumentParser(description="CANARY — ESG regulatory change monitor")
     subparsers = parser.add_subparsers(dest="command")
 
-    # Default: run change detection (no subcommand needed)
+    # Global options for default command
     parser.add_argument(
         "--no-vault",
         action="store_true",
         help="Disable vault writes (console output only)",
+    )
+    parser.add_argument(
+        "--source",
+        type=str,
+        default=None,
+        help="Filter to a single source ID from sources.yaml",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Claude model to use (default: claude-sonnet-4-6, or CANARY_MODEL env var)",
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to sources.yaml config (default: config/sources.yaml, or CANARY_CONFIG env var)",
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Set log level to DEBUG",
+    )
+    parser.add_argument(
+        "--quiet", "-q",
+        action="store_true",
+        help="Set log level to WARNING",
     )
 
     # extract-objectives subcommand
@@ -462,6 +563,8 @@ def main() -> None:
         action="store_true",
         help="Disable vault writes",
     )
+    obj_parser.add_argument("--model", type=str, default=None)
+    obj_parser.add_argument("--config", type=str, default=None)
 
     # status subcommand
     subparsers.add_parser(
@@ -469,7 +572,40 @@ def main() -> None:
         help="Show recent run status and issues",
     )
 
+    # prune subcommand
+    prune_parser = subparsers.add_parser(
+        "prune",
+        help="Delete old run data from the database",
+    )
+    prune_parser.add_argument(
+        "--days",
+        type=int,
+        default=90,
+        help="Delete data older than N days (default: 90)",
+    )
+
     args = parser.parse_args()
+
+    # Configure logging level
+    if getattr(args, "verbose", False):
+        log_level = logging.DEBUG
+    elif getattr(args, "quiet", False):
+        log_level = logging.WARNING
+    else:
+        log_level = logging.INFO
+
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+    model = _resolve_model(getattr(args, "model", None))
+
+    try:
+        config_path = _resolve_config(getattr(args, "config", None))
+    except FileNotFoundError as e:
+        logger.error("%s", e)
+        sys.exit(2)
 
     if args.command == "extract-objectives":
         exit_code = asyncio.run(
@@ -477,12 +613,23 @@ def main() -> None:
                 source_id=args.source,
                 count=args.count,
                 vault_enabled=not args.no_vault,
+                model=model,
+                config_path=config_path,
             )
         )
     elif args.command == "status":
         exit_code = run_status()
+    elif args.command == "prune":
+        exit_code = run_prune(days=args.days)
     else:
-        exit_code = asyncio.run(run_canary(vault_enabled=not args.no_vault))
+        exit_code = asyncio.run(
+            run_canary(
+                vault_enabled=not args.no_vault,
+                source_filter=getattr(args, "source", None),
+                model=model,
+                config_path=config_path,
+            )
+        )
 
     sys.exit(exit_code)
 

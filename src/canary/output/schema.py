@@ -6,6 +6,14 @@ from canary.analysis.models import ComplianceObjective, ExtractionResult
 from canary.analysis.verifier import VerificationReport
 
 
+def _yaml_quote(value: str) -> str:
+    """Quote a YAML value if it contains special characters."""
+    if any(ch in value for ch in (":", "#", "[", "]", "{", "}", '"', "'", "&", "*", "?", "|", ">", "!", "%", "@", "`")):
+        escaped = value.replace('"', '\\"')
+        return f'"{escaped}"'
+    return value
+
+
 def generate_change_report(
     source: dict,
     extraction: ExtractionResult | None,
@@ -28,11 +36,14 @@ def generate_change_report(
             affects.extend(change.affected_articles)
     affects = sorted(set(affects))
 
+    regulation = _yaml_quote(tags['regulation']) if tags else 'unknown'
+    jurisdiction = _yaml_quote(tags['jurisdiction']) if tags else 'unknown'
+
     lines = [
         "---",
         "type: regulatory-change",
-        f"regulation: {tags['regulation'] if tags else 'unknown'}",
-        f"jurisdiction: {tags['jurisdiction'] if tags else 'unknown'}",
+        f"regulation: {regulation}",
+        f"jurisdiction: {jurisdiction}",
         f"severity: {severity}",
         "status: unreviewed",
         f"detected: {today}",
@@ -40,7 +51,7 @@ def generate_change_report(
         "affects:",
     ]
     for a in affects:
-        lines.append(f"  - {a}")
+        lines.append(f"  - {_yaml_quote(a)}")
     lines.append(f"canary_run_id: {run_id}")
     lines.append("---")
     lines.append("")
@@ -132,9 +143,9 @@ def generate_objective_note(
     lines = [
         "---",
         "type: compliance-objective",
-        f"regulation: {regulation_name}",
+        f"regulation: {_yaml_quote(regulation_name)}",
         f"celex_id: {celex_id}",
-        f"article: \"{objective.article}\"",
+        f"article: {_yaml_quote(objective.article)}",
         f"obligation_type: {objective.obligation_type}",
         f"materiality: {objective.materiality}",
         "status: active",

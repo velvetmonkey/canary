@@ -21,6 +21,7 @@ class CANARYState(TypedDict, total=False):
     sources: list[SourceConfig]
     current_source: SourceConfig
     run_id: str
+    model: str
 
     # Fetch stage
     fetched_text: str | None

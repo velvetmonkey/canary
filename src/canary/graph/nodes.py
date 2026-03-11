@@ -2,9 +2,6 @@
 
 import json
 import logging
-from pathlib import Path
-
-import yaml
 
 from canary.analysis.extractor import extract_changes
 from canary.analysis.mapper import tag_changes
@@ -12,7 +9,7 @@ from canary.analysis.verifier import verify_citations
 from canary.detection.differ import compute_diff, summarize_diff
 from canary.detection.hasher import compute_hash
 from canary.detection.store import DocumentStore
-from canary.fetchers.eurlex import EurLexFetcher
+from canary.fetchers.base import BaseFetcher
 from canary.graph.state import CANARYState
 from canary.output.schema import generate_change_report
 from canary.output.vault import VaultWriter
@@ -20,12 +17,12 @@ from canary.output.vault import VaultWriter
 logger = logging.getLogger(__name__)
 
 # Module-level singletons (set by graph builder)
-_fetcher: EurLexFetcher | None = None
+_fetcher: BaseFetcher | None = None
 _store: DocumentStore | None = None
 _vault_writer: VaultWriter | None = None
 
 
-def set_fetcher(fetcher: EurLexFetcher) -> None:
+def set_fetcher(fetcher: BaseFetcher) -> None:
     global _fetcher
     _fetcher = fetcher
 
@@ -38,14 +35,6 @@ def set_store(store: DocumentStore) -> None:
 def set_vault_writer(writer: VaultWriter) -> None:
     global _vault_writer
     _vault_writer = writer
-
-
-async def load_sources(state: CANARYState) -> dict:
-    """Load source configurations from sources.yaml."""
-    config_path = Path("config/sources.yaml")
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
-    return {"sources": config["sources"]}
 
 
 async def fetch_source(state: CANARYState) -> dict:
@@ -125,8 +114,9 @@ async def extract_obligations(state: CANARYState) -> dict:
     if not diff_text:
         return {"extraction": None}
 
+    model = state.get("model", "claude-sonnet-4-6")
     try:
-        extraction, extraction_metrics = await extract_changes(diff_text, source_text)
+        extraction, extraction_metrics = await extract_changes(diff_text, source_text, model=model)
     except Exception as e:
         logger.error("Extraction failed for %s: %s", celex_id, e)
         return {
@@ -176,7 +166,7 @@ async def output_results(state: CANARYState) -> dict:
             "hash": state.get("new_hash"),
             "message": "First run — baseline indexed, no changes to report.",
         }
-        print(json.dumps(result, indent=2))
+        logger.info("Baseline stored for %s: %s", source["celex_id"], json.dumps(result))
         return {"report": json.dumps(result)}
 
     if not state.get("changed"):
@@ -186,7 +176,7 @@ async def output_results(state: CANARYState) -> dict:
             "celex_id": source["celex_id"],
             "message": "No changes detected.",
         }
-        print(json.dumps(result, indent=2))
+        logger.info("No change for %s", source["celex_id"])
         return {"report": json.dumps(result)}
 
     # Generate markdown report
@@ -202,7 +192,6 @@ async def output_results(state: CANARYState) -> dict:
         run_id=state.get("run_id", "unknown"),
     )
 
-    # Print both structured JSON and markdown
     result = {
         "status": "changes_detected",
         "source": source["label"],
@@ -211,9 +200,8 @@ async def output_results(state: CANARYState) -> dict:
         "all_citations_verified": verification.all_verified if verification else None,
         "tags": tags,
     }
-    print(json.dumps(result, indent=2))
-    print("\n--- Markdown Report ---\n")
-    print(report_md)
+    logger.info("Changes detected for %s: %s", source["celex_id"], json.dumps(result))
+    logger.debug("Markdown report:\n%s", report_md)
 
     return {"report": report_md, "tags": tags}
 

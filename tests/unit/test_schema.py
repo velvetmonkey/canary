@@ -1,8 +1,8 @@
 """Tests for change report generation."""
 
-from canary.analysis.models import ExtractionResult, RegulatoryChange
+from canary.analysis.models import ComplianceObjective, ExtractionResult, RegulatoryChange
 from canary.analysis.verifier import CitationResult, VerificationReport
-from canary.output.schema import generate_change_report
+from canary.output.schema import _yaml_quote, generate_change_report, generate_objective_note
 
 
 def _make_source(celex_id="32019R2088", label="SFDR L1", source_id="SFDR-L1"):
@@ -176,3 +176,53 @@ class TestGenerateChangeReport:
         )
         assert "## Citation Verification" in report
         assert "1/1" in report
+
+
+class TestYamlQuote:
+    def test_plain_value_unchanged(self):
+        assert _yaml_quote("SFDR") == "SFDR"
+
+    def test_colon_gets_quoted(self):
+        assert _yaml_quote("Reg (EU) 2019/2088: SFDR") == '"Reg (EU) 2019/2088: SFDR"'
+
+    def test_hash_gets_quoted(self):
+        assert _yaml_quote("Article #8") == '"Article #8"'
+
+    def test_brackets_get_quoted(self):
+        assert _yaml_quote("Article [8]") == '"Article [8]"'
+
+    def test_embedded_quotes_escaped(self):
+        result = _yaml_quote('He said "hello"')
+        assert result == '"He said \\"hello\\""'
+
+
+class TestYamlFrontmatterEscaping:
+    def test_regulation_with_colon_is_quoted(self):
+        report = generate_change_report(
+            source=_make_source(),
+            extraction=_make_extraction(),
+            verification=_make_verification(),
+            tags={"regulation": "Regulation (EU) 2019/2088: SFDR", "jurisdiction": "EU"},
+            run_id="run-test",
+        )
+        assert 'regulation: "Regulation (EU) 2019/2088: SFDR"' in report
+
+    def test_objective_note_regulation_with_colon(self):
+        obj = ComplianceObjective(
+            article="Article 3",
+            title="Sustainability risk policies",
+            obligation_type="governance",
+            who="financial market participants",
+            what="Integrate sustainability risks in investment decisions",
+            where="in internal policies",
+            deadline=None,
+            materiality="high",
+            verbatim_quote="shall integrate sustainability risks",
+        )
+        note = generate_objective_note(
+            objective=obj,
+            regulation_name="Regulation (EU) 2019/2088: SFDR",
+            celex_id="32019R2088",
+            run_id="run-test",
+        )
+        assert 'regulation: "Regulation (EU) 2019/2088: SFDR"' in note

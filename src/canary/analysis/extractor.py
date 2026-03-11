@@ -4,12 +4,27 @@ import logging
 import time
 from dataclasses import dataclass
 
+import anthropic
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import AIMessage
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from canary.analysis.models import ExtractionResult
 
 logger = logging.getLogger(__name__)
+
+# Context budget for source text in change extraction.
+# The diff is typically small; the source text is context for quote verification.
+# Same model limits as objectives.py — 200K token context, reserve 30K for overhead.
+_MAX_SOURCE_CHARS = (200_000 - 30_000) * 4  # ~680K chars
+
+# Retry wait strategy — module-level for testability
+_RETRY_WAIT = wait_exponential(multiplier=1, min=4, max=60)
 
 SYSTEM_PROMPT = """\
 You are a regulatory analysis expert specializing in ESG and sustainable finance regulation.
@@ -63,20 +78,37 @@ async def extract_changes(
     llm = ChatAnthropic(model=model, temperature=0, max_tokens=4096)
     structured_llm = llm.with_structured_output(ExtractionResult, include_raw=True)
 
+    if len(source_text) > _MAX_SOURCE_CHARS:
+        logger.warning(
+            "Source text truncated from %d to %d chars for extraction",
+            len(source_text), _MAX_SOURCE_CHARS,
+        )
+
     user_message = USER_PROMPT_TEMPLATE.format(
         diff_text=diff_text,
-        source_text=source_text[:50_000],  # truncate very long docs
+        source_text=source_text[:_MAX_SOURCE_CHARS],
     )
 
     logger.info("Extracting changes via %s", model)
     start = time.monotonic()
 
-    raw_result = await structured_llm.ainvoke(
-        [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
-        ]
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=_RETRY_WAIT,
+        retry=retry_if_exception_type(
+            (anthropic.APIStatusError, anthropic.APIConnectionError)
+        ),
+        reraise=True,
     )
+    async def _invoke():
+        return await structured_llm.ainvoke(
+            [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message},
+            ]
+        )
+
+    raw_result = await _invoke()
 
     duration_ms = (time.monotonic() - start) * 1000
 

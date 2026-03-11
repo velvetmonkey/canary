@@ -1,0 +1,16 @@
+[Unit]
+Description=CANARY ESG regulatory change monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ben/src/canary
+ExecStart=/home/ben/.local/bin/uv run canary
+EnvironmentFile=/home/ben/src/canary/.env
+
+# Timeout for the full run (10 minutes should be plenty)
+TimeoutStartSec=600
+
+[Install]
+WantedBy=default.target
