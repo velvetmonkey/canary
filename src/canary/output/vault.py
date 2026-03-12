@@ -128,8 +128,10 @@ class VaultWriter:
         Returns the path of the created note, or None on error.
         """
         # Sanitize article ref for filename: "Article 4(1)(a)" → "article-4-1-a"
-        safe_name = article_ref.lower().replace(" ", "-").replace("(", "-").replace(")", "")
-        safe_name = safe_name.replace("--", "-").rstrip("-")
+        import re
+        safe_name = article_ref.lower()
+        safe_name = re.sub(r"[^a-z0-9]+", "-", safe_name)
+        safe_name = safe_name.strip("-")
         note_path = f"work/compliance/objectives/{regulation_short}/{safe_name}.md"
 
         try:
