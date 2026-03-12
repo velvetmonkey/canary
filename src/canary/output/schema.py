@@ -173,3 +173,68 @@ def generate_objective_note(
     ])
 
     return "\n".join(lines)
+
+
+def generate_regulation_readme(
+    regulation_name: str,
+    celex_id: str,
+    objectives: list[ComplianceObjective],
+    verified_articles: set[str],
+    run_id: str,
+) -> str:
+    """Generate a README index note for a regulation's objectives folder."""
+    today = date.today().isoformat()
+    total = len(objectives)
+    verified = len(verified_articles)
+
+    lines = [
+        "---",
+        "type: regulation-index",
+        f"regulation: {_yaml_quote(regulation_name)}",
+        f"celex_id: {celex_id}",
+        f"objectives: {total}",
+        f"verified: {verified}",
+        f"updated: {today}",
+        f"canary_run_id: {run_id}",
+        "---",
+        "",
+        f"# {regulation_name}",
+        "",
+        f"**{verified}/{total}** citations verified | "
+        f"[EUR-Lex](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:{celex_id})",
+        "",
+        "## Obligations",
+        "",
+        "| Article | Title | Type | Materiality | Citation |",
+        "|---------|-------|------|-------------|----------|",
+    ]
+
+    for obj in objectives:
+        citation = "verified" if obj.article in verified_articles else "**UNVERIFIED**"
+        lines.append(
+            f"| {obj.article} | {obj.title} | {obj.obligation_type} "
+            f"| {obj.materiality} | {citation} |"
+        )
+
+    lines.extend(["", "## Coverage by Type", ""])
+    type_counts: dict[str, int] = {}
+    for obj in objectives:
+        type_counts[obj.obligation_type] = type_counts.get(obj.obligation_type, 0) + 1
+    for t, c in sorted(type_counts.items(), key=lambda x: -x[1]):
+        lines.append(f"- **{t}**: {c}")
+
+    lines.extend(["", "## Coverage by Materiality", ""])
+    mat_counts: dict[str, int] = {}
+    for obj in objectives:
+        mat_counts[obj.materiality] = mat_counts.get(obj.materiality, 0) + 1
+    for m in ["high", "medium", "low"]:
+        if m in mat_counts:
+            lines.append(f"- **{m}**: {mat_counts[m]}")
+
+    lines.extend([
+        "",
+        f"*Extracted {today} by CANARY (run `{run_id}`)*",
+        "",
+    ])
+
+    return "\n".join(lines)

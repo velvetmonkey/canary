@@ -19,7 +19,7 @@ from canary.graph.graph import build_graph
 from canary.graph.nodes import set_fetcher, set_store, set_vault_writer
 from canary.graph.state import CANARYState
 from canary.issues import IssueCollector
-from canary.output.schema import generate_objective_note
+from canary.output.schema import generate_objective_note, generate_regulation_readme
 from canary.output.vault import VaultWriter
 from canary.tracing import RunMetrics, configure_langsmith
 
@@ -375,6 +375,7 @@ async def run_extract_objectives(
     # Track citation stats
     verified_count = 0
     unverified_count = 0
+    verified_articles: set[str] = set()
 
     # Generate and write each objective note
     for i, obj in enumerate(extraction.objectives, 1):
@@ -389,6 +390,7 @@ async def run_extract_objectives(
         # Check citation verification from the generated note
         if "citation: verified" in note_md:
             verified_count += 1
+            verified_articles.add(obj.article)
         else:
             unverified_count += 1
             issues.warning(
@@ -420,6 +422,29 @@ async def run_extract_objectives(
                     "vault", celex_id,
                     f"Failed to write {obj.article} to vault",
                 )
+
+    # Write regulation README index
+    if vault_writer:
+        reg_short = source["id"].lower()
+        readme_md = generate_regulation_readme(
+            regulation_name=extraction.regulation_name,
+            celex_id=celex_id,
+            objectives=extraction.objectives,
+            verified_articles=verified_articles,
+            run_id=run_id,
+        )
+        try:
+            await vault_writer._call_tool(
+                "vault_create_note",
+                {
+                    "path": f"work/compliance/objectives/{reg_short}/README.md",
+                    "content": readme_md,
+                    "overwrite": True,
+                },
+            )
+            logger.info("Wrote regulation index to %s/README.md", reg_short)
+        except Exception as e:
+            logger.warning("Failed to write regulation index: %s", e)
 
     # Summary (machine-readable JSON to stdout)
     summary = {
