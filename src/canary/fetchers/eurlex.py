@@ -101,7 +101,19 @@ class EurLexFetcher(BaseFetcher):
         for selector in STRIP_SELECTORS:
             for tag in soup.select(selector):
                 tag.decompose()
-        return soup.get_text(separator="\n", strip=True)
+        # Strip inline footnote references — <a> tags containing <span class="oj-note-tag">
+        # These render as "( 14 )" in extracted text, breaking citation matching
+        for note_tag in soup.select(".oj-note-tag"):
+            parent_a = note_tag.find_parent("a")
+            if parent_a:
+                parent_a.decompose()
+            else:
+                note_tag.decompose()
+        # Use get_text() without separator — preserves original whitespace.
+        # separator="\n" inserts newlines at every tag boundary, which breaks
+        # PDF-to-HTML documents where words are split across <span> elements
+        # (e.g. <span>sco</span><span>pe</span> → "sco\npe" → "sco pe").
+        return soup.get_text()
 
     async def fetch_text(self, celex_id: str) -> tuple[str | None, bool]:
         """Fetch and extract clean text for a CELEX ID.

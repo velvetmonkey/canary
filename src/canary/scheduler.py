@@ -253,7 +253,8 @@ async def run_extract_objectives(
 
     Returns exit code: 0 = clean, 1 = warnings, 2 = errors.
     """
-    from canary.analysis.objectives import extract_objectives
+    from canary.analysis.normalize import citation_matches
+    from canary.analysis.objectives import extract_objectives, requote_citations
 
     load_dotenv()
 
@@ -324,6 +325,41 @@ async def run_extract_objectives(
             "extract", celex_id,
             f"Requested {count} objectives but only got {len(extraction.objectives)}",
         )
+
+    # Citation retry: re-quote any objectives that failed verification
+    unverified_objs = [
+        obj for obj in extraction.objectives
+        if not citation_matches(obj.verbatim_quote, text)
+    ]
+    if unverified_objs:
+        logger.info(
+            "%d/%d citations unverified — attempting re-quote",
+            len(unverified_objs), len(extraction.objectives),
+        )
+        try:
+            corrected, retry_metrics = await requote_citations(
+                unverified_objs, text, model=model,
+            )
+            obj_metrics.input_tokens += retry_metrics.input_tokens
+            obj_metrics.output_tokens += retry_metrics.output_tokens
+            obj_metrics.duration_ms += retry_metrics.duration_ms
+
+            # Build lookup: article → corrected objective
+            corrected_by_article = {c.article: c for c in corrected}
+            fixed = 0
+            for i, obj in enumerate(extraction.objectives):
+                if obj.article in corrected_by_article:
+                    replacement = corrected_by_article[obj.article]
+                    if citation_matches(replacement.verbatim_quote, text):
+                        extraction.objectives[i] = replacement
+                        fixed += 1
+            logger.info(
+                "Re-quote fixed %d/%d citations (%.0fms, %d/%d tokens)",
+                fixed, len(unverified_objs), retry_metrics.duration_ms,
+                retry_metrics.input_tokens, retry_metrics.output_tokens,
+            )
+        except Exception as e:
+            logger.warning("Citation retry failed: %s", e)
 
     # Connect vault writer
     vault_writer: VaultWriter | None = None

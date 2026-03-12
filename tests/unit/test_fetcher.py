@@ -36,6 +36,23 @@ class TestExtractText:
         assert "Footer" not in text
         assert "Article 8" in text
 
+    def test_strips_footnote_references(self):
+        """Inline footnote markers like (14) from <span class="oj-note-tag"> must be removed."""
+        html = """
+        <html>
+        <body>
+            <p>of the European Parliament and of the Council
+            <a id="ntc14" href="#ntr14">(<span class="oj-super oj-note-tag">14</span>)</a>;
+            brief summaries</p>
+        </body>
+        </html>
+        """
+        text = EurLexFetcher.extract_text(html)
+        assert "( 14 )" not in text
+        assert "(14)" not in text
+        assert "Council" in text
+        assert "brief summaries" in text
+
     def test_empty_html(self):
         text = EurLexFetcher.extract_text("<html><body></body></html>")
         assert text == "" or text.strip() == ""

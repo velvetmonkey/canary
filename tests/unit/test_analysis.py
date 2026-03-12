@@ -175,3 +175,45 @@ class TestVerifier:
         report = verify_citations(extraction, "source text")
         assert report.all_verified is True
         assert report.unverified_count == 0
+
+    def test_smart_quotes_verified(self):
+        """EUR-Lex source has smart quotes, Claude output has ASCII quotes."""
+        source = "The regulation states \u201Cfinancial products shall disclose\u201D clearly."
+        extraction = ExtractionResult(
+            changes=[
+                RegulatoryChange(
+                    change_type="amendment",
+                    affected_articles=["Article 8"],
+                    materiality="high",
+                    materiality_rationale="Test",
+                    supporting_quotes=['"financial products shall disclose"'],
+                    source_section="Article 8",
+                    confidence=0.9,
+                )
+            ],
+            source_celex_id="32019R2088",
+            summary="Test",
+        )
+        report = verify_citations(extraction, source)
+        assert report.all_verified is True
+
+    def test_nbsp_verified(self):
+        """EUR-Lex source has non-breaking spaces, Claude output has regular spaces."""
+        source = "financial\u00A0products shall\u00A0disclose sustainability"
+        extraction = ExtractionResult(
+            changes=[
+                RegulatoryChange(
+                    change_type="amendment",
+                    affected_articles=["Article 8"],
+                    materiality="high",
+                    materiality_rationale="Test",
+                    supporting_quotes=["financial products shall disclose"],
+                    source_section="Article 8",
+                    confidence=0.9,
+                )
+            ],
+            source_celex_id="32019R2088",
+            summary="Test",
+        )
+        report = verify_citations(extraction, source)
+        assert report.all_verified is True

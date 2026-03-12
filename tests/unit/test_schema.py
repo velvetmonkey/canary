@@ -207,6 +207,29 @@ class TestYamlFrontmatterEscaping:
         )
         assert 'regulation: "Regulation (EU) 2019/2088: SFDR"' in report
 
+    def test_objective_note_smart_quote_source_verifies(self):
+        """Source text with smart quotes should still verify against ASCII quote."""
+        obj = ComplianceObjective(
+            article="Article 8",
+            title="Disclosure requirements",
+            obligation_type="disclosure",
+            who="financial market participants",
+            what="disclose sustainability risks",
+            where="in pre-contractual disclosures",
+            deadline=None,
+            materiality="high",
+            verbatim_quote='"financial products shall disclose"',
+        )
+        source = "The regulation states \u201Cfinancial products shall disclose\u201D in Article 8."
+        note = generate_objective_note(
+            objective=obj,
+            regulation_name="SFDR",
+            celex_id="32019R2088",
+            run_id="run-test",
+            source_text=source,
+        )
+        assert "citation: verified" in note
+
     def test_objective_note_regulation_with_colon(self):
         obj = ComplianceObjective(
             article="Article 3",

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 import anthropic
 from langchain_anthropic import ChatAnthropic
+from pydantic import BaseModel
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -17,7 +18,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from canary.analysis.models import ObjectiveExtraction
+from canary.analysis.models import ComplianceObjective, ObjectiveExtraction
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ CRITICAL RULES:
 1. Focus on substantive obligations, not procedural/administrative articles (entry into force, competent authorities, etc).
 2. Each objective must map to a specific Article or sub-article.
 3. The verbatim_quote MUST be copied exactly from the source text — do NOT paraphrase.
+   Quote a SINGLE contiguous sentence or clause (max 300 chars). Do NOT stitch together text from multiple sub-paragraphs.
 4. Assess materiality from the perspective of an EU asset manager operating Article 8/9 funds.
 5. Order by importance: most material obligations first.
 6. obligation_type must be one of: disclosure, reporting, governance, process, prohibition.
@@ -269,3 +271,112 @@ async def extract_objectives(
     )
 
     return merged, aggregate_metrics
+
+
+# --- Citation retry ---
+
+REQUOTE_SYSTEM = """\
+You are a regulatory compliance expert. You previously extracted compliance objectives \
+from a regulation, but some verbatim quotes could not be verified against the source text.
+
+Your task: for each objective listed below, find the EXACT passage in the source text \
+that establishes the obligation and return it as a corrected verbatim_quote.
+
+RULES:
+1. The quote MUST be copied character-for-character from the source text.
+2. Do NOT paraphrase, summarize, or combine passages.
+3. Keep quotes under 300 characters — pick the single most relevant sentence or clause.
+4. If you genuinely cannot find a matching passage, return the original quote unchanged.
+"""
+
+REQUOTE_USER_TEMPLATE = """\
+## Source Text
+
+{source_text}
+
+## Objectives needing corrected quotes
+
+{objectives_list}
+
+For each objective above, return a corrected verbatim_quote copied exactly from the source text.
+"""
+
+
+class RequoteResult(BaseModel):
+    """Result of re-quoting unverified citations."""
+
+    corrections: list[ComplianceObjective]
+
+
+async def requote_citations(
+    objectives: list[ComplianceObjective],
+    source_text: str,
+    model: str = "claude-sonnet-4-6",
+) -> tuple[list[ComplianceObjective], ObjectiveMetrics]:
+    """Re-extract verbatim quotes for objectives that failed citation verification.
+
+    Sends the source text + the failed objectives back to Claude and asks for
+    exact quotes. Returns corrected objectives and metrics.
+    """
+    obj_lines = []
+    for i, obj in enumerate(objectives, 1):
+        obj_lines.append(
+            f"{i}. {obj.article} — {obj.title}\n"
+            f"   obligation_type: {obj.obligation_type}\n"
+            f"   who: {obj.who}\n"
+            f"   what: {obj.what}\n"
+            f"   original quote: {obj.verbatim_quote[:200]}"
+        )
+
+    max_tokens = min(max(len(objectives) * 400 + 2000, 4096), 16384)
+    llm = ChatAnthropic(model=model, temperature=0, max_tokens=max_tokens)
+    structured_llm = llm.with_structured_output(RequoteResult, include_raw=True)
+
+    user_msg = REQUOTE_USER_TEMPLATE.format(
+        source_text=source_text,
+        objectives_list="\n".join(obj_lines),
+    )
+
+    logger.info("Re-quoting %d unverified citations via %s", len(objectives), model)
+    start = time.monotonic()
+
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=_RETRY_WAIT,
+        retry=retry_if_exception_type(
+            (anthropic.APIStatusError, anthropic.APIConnectionError)
+        ),
+        reraise=True,
+    )
+    async def _invoke():
+        return await structured_llm.ainvoke(
+            [
+                {"role": "system", "content": REQUOTE_SYSTEM},
+                {"role": "user", "content": user_msg},
+            ]
+        )
+
+    raw_result = await _invoke()
+    duration_ms = (time.monotonic() - start) * 1000
+
+    raw_msg = raw_result["raw"]
+    usage = getattr(raw_msg, "usage_metadata", None) or {}
+    input_tokens = usage.get("input_tokens", 0) if isinstance(usage, dict) else 0
+    output_tokens = usage.get("output_tokens", 0) if isinstance(usage, dict) else 0
+
+    result: RequoteResult = raw_result["parsed"]
+
+    metrics = ObjectiveMetrics(
+        model=model,
+        duration_ms=duration_ms,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        objectives_extracted=len(result.corrections),
+    )
+
+    logger.info(
+        "Re-quoted %d objectives in %.0fms (tokens: %d in, %d out)",
+        len(result.corrections), duration_ms, input_tokens, output_tokens,
+    )
+
+    return result.corrections, metrics

@@ -3,6 +3,7 @@
 from datetime import date
 
 from canary.analysis.models import ComplianceObjective, ExtractionResult
+from canary.analysis.normalize import citation_matches
 from canary.analysis.verifier import VerificationReport
 
 
@@ -127,17 +128,10 @@ def generate_objective_note(
     """Generate a vault note for a single compliance objective."""
     today = date.today().isoformat()
 
-    # Verify the quote exists in source text (normalize unicode dashes/spaces)
+    # Verify the quote exists in source text
     citation_status = "unverified"
     if source_text:
-        import unicodedata
-
-        norm_source = unicodedata.normalize("NFKC", source_text).replace("\u2011", "-")
-        norm_quote = unicodedata.normalize("NFKC", objective.verbatim_quote).replace("\u2011", "-")
-        # Also try whitespace-collapsed comparison
-        norm_source_ws = " ".join(norm_source.split())
-        norm_quote_ws = " ".join(norm_quote.split())
-        if norm_quote in norm_source or norm_quote_ws in norm_source_ws:
+        if citation_matches(objective.verbatim_quote, source_text):
             citation_status = "verified"
 
     lines = [

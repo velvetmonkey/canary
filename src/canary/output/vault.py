@@ -135,7 +135,7 @@ class VaultWriter:
         try:
             await self._call_tool(
                 "vault_create_note",
-                {"path": note_path, "content": note_md},
+                {"path": note_path, "content": note_md, "overwrite": True, "suggest_wikilinks": True},
             )
             logger.info("Wrote objective to %s", note_path)
             return note_path
