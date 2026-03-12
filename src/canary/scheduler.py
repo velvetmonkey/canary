@@ -244,7 +244,7 @@ async def run_canary(
 
 async def run_extract_objectives(
     source_id: str | None = None,
-    count: int = 10,
+    count: int | None = None,
     vault_enabled: bool = True,
     model: str = "claude-sonnet-4-6",
     config_path: Path | None = None,
@@ -278,7 +278,8 @@ async def run_extract_objectives(
     source = sources[0]
     celex_id = source["celex_id"]
 
-    logger.info("Extracting %d objectives from %s (%s)", count, source["label"], celex_id)
+    count_label = str(count) if count else "all"
+    logger.info("Extracting %s objectives from %s (%s)", count_label, source["label"], celex_id)
 
     # Fetch the document
     fetcher_type = source.get("fetcher", "eurlex")
@@ -319,8 +320,8 @@ async def run_extract_objectives(
         chunks_info,
     )
 
-    # Quality checks: only warn about count if single-pass (chunked may exceed count)
-    if obj_metrics.chunks == 1 and len(extraction.objectives) < count:
+    # Quality checks: only warn about count if explicitly requested and single-pass
+    if count and obj_metrics.chunks == 1 and len(extraction.objectives) < count:
         issues.warning(
             "extract", celex_id,
             f"Requested {count} objectives but only got {len(extraction.objectives)}",
@@ -591,8 +592,8 @@ def main() -> None:
     obj_parser.add_argument(
         "--count",
         type=int,
-        default=10,
-        help="Number of objectives to extract (default: 10)",
+        default=None,
+        help="Max objectives to extract (default: all)",
     )
     obj_parser.add_argument(
         "--no-vault",

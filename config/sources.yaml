@@ -16,3 +16,15 @@ sources:
     label: "SFDR 2.0 Amendment Proposal (Nov 2025)"
     fetcher: eurlex
     priority: high
+
+  - id: EU-TAXONOMY
+    celex_id: "32020R0852"
+    label: "EU Taxonomy Regulation (EU) 2020/852"
+    fetcher: eurlex
+    priority: critical
+
+  - id: MIFID-SUSTAINABILITY
+    celex_id: "32021R1253"
+    label: "MiFID II Sustainability Preferences — Delegated Reg (EU) 2021/1253"
+    fetcher: eurlex
+    priority: high

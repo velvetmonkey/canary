@@ -38,8 +38,8 @@ _RETRY_WAIT = wait_exponential(multiplier=1, min=4, max=60)
 SYSTEM_PROMPT = """\
 You are a regulatory compliance expert specializing in EU sustainable finance regulation (SFDR, Taxonomy, CSRD).
 
-You are given the full text of a regulation (or a section of one). Your task: extract the {count} most \
-important compliance objectives — the concrete obligations that firms must fulfil.
+You are given the full text of a regulation (or a section of one). Your task: extract {count_instruction} \
+compliance objectives — the concrete obligations that firms must fulfil.
 
 CRITICAL RULES:
 1. Focus on substantive obligations, not procedural/administrative articles (entry into force, competent authorities, etc).
@@ -57,7 +57,7 @@ USER_PROMPT_TEMPLATE = """\
 
 {source_text}
 
-Extract the {count} most important compliance objectives from this regulation text. \
+Extract {count_instruction} compliance objectives from this regulation text. \
 For each, provide the exact article reference, a plain-language description of \
 the obligation, and a verbatim quote establishing it.
 """
@@ -83,22 +83,25 @@ class _ChunkResult:
 
 async def _extract_single(
     source_text: str,
-    count: int,
+    count: int | None,
     model: str,
 ) -> tuple[ObjectiveExtraction, ObjectiveMetrics]:
     """Single-pass extraction (no chunking). Source text must fit in context."""
+    count_instruction = f"the {count} most important" if count else "ALL substantive"
     # ~400 tokens per objective + overhead for wrapper fields
-    max_tokens = min(max(count * 400 + 2000, 8192), 32768)
+    effective_count = count or 80  # budget for token estimation when extracting all
+    max_tokens = min(max(effective_count * 400 + 2000, 8192), 32768)
     llm = ChatAnthropic(model=model, temperature=0, max_tokens=max_tokens)
     structured_llm = llm.with_structured_output(ObjectiveExtraction, include_raw=True)
 
     user_message = USER_PROMPT_TEMPLATE.format(
         source_text=source_text,
-        count=count,
+        count_instruction=count_instruction,
     )
-    system_message = SYSTEM_PROMPT.format(count=count)
+    system_message = SYSTEM_PROMPT.format(count_instruction=count_instruction)
 
-    logger.info("Extracting %d objectives via %s (%d chars)", count, model, len(source_text))
+    count_label = str(count) if count else "all"
+    logger.info("Extracting %s objectives via %s (%d chars)", count_label, model, len(source_text))
     start = time.monotonic()
 
     @retry(
@@ -189,7 +192,7 @@ def _split_chunks(text: str, max_chars: int, overlap: int) -> list[str]:
 
 async def extract_objectives(
     source_text: str,
-    count: int = 10,
+    count: int | None = None,
     model: str = "claude-sonnet-4-6",
 ) -> tuple[ObjectiveExtraction, ObjectiveMetrics]:
     """Extract structured compliance objectives from regulation text.

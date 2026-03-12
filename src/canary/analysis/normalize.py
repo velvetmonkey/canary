@@ -64,9 +64,21 @@ def citation_matches(quote: str, source: str) -> bool:
     if nq in ns:
         return True
 
+    # Quote-insensitive match — unify single/double ASCII quotes
+    # Legal text uses quotes stylistically; Claude sometimes swaps them
+    nq_noquote = nq.replace('"', "'")
+    ns_noquote = ns.replace('"', "'")
+    if nq_noquote in ns_noquote:
+        return True
+
     # Prefix match — strip trailing ellipsis then check
     prefix = nq.rstrip(".")
     if len(prefix) >= _MIN_PREFIX_LEN and prefix in ns:
+        return True
+
+    # Quote-insensitive prefix match
+    prefix_nq = nq_noquote.rstrip(".")
+    if len(prefix_nq) >= _MIN_PREFIX_LEN and prefix_nq in ns_noquote:
         return True
 
     # Elision match — quote contains [...] to skip source text
