@@ -1,10 +1,61 @@
 """Change report generation — markdown with YAML frontmatter."""
 
+import re
 from datetime import date
 
 from canary.analysis.models import ComplianceObjective, ExtractionResult
 from canary.analysis.normalize import citation_matches
 from canary.analysis.verifier import VerificationReport
+
+# Regulatory entities to wikilink in body text
+_REGULATION_ENTITIES = [
+    "SFDR",
+    "EU Taxonomy Regulation",
+    "EU Taxonomy",
+    "Taxonomy Regulation",
+    "MiFID II",
+    "CSRD",
+    "NFRD",
+    "AIFMD",
+    "UCITS Directive",
+    "UCITS",
+    "Solvency II",
+    "CRR",
+    "CRD",
+    "Benchmarks Regulation",
+    "Paris Agreement",
+]
+
+# Match "Article N", "Article N(X)", "Article N(X)(y)" etc.
+_ARTICLE_RE = re.compile(r"(?<!\[\[)(Article \d+(?:\(\d+\))*(?:\([a-z]\))*)(?![\w\]])")
+
+
+def _apply_wikilinks(text: str, self_article: str | None = None) -> str:
+    """Apply wikilinks to known regulatory entities and article cross-references.
+
+    - Links article references: Article 8(1) → [[Article 8(1)]]
+    - Links regulation short names: SFDR → [[SFDR]]
+    - Skips self-references (the note's own article)
+    - Skips text already inside wikilinks
+    """
+    # Link article references (skip self-links)
+    def _link_article(m: re.Match) -> str:
+        ref = m.group(1)
+        if self_article and ref == self_article:
+            return ref
+        return f"[[{ref}]]"
+
+    text = _ARTICLE_RE.sub(_link_article, text)
+
+    # Link regulation entities (longest first to avoid partial matches)
+    for entity in sorted(_REGULATION_ENTITIES, key=len, reverse=True):
+        # Match whole word, not already inside [[ ]]
+        pattern = re.compile(
+            r"(?<!\[\[)(?<!\w)" + re.escape(entity) + r"(?!\w)(?!\]\])"
+        )
+        text = pattern.sub(f"[[{entity}]]", text)
+
+    return text
 
 
 def _yaml_quote(value: str) -> str:
@@ -65,7 +116,7 @@ def generate_change_report(
     if extraction:
         lines.append("## Summary")
         lines.append("")
-        lines.append(extraction.summary)
+        lines.append(_apply_wikilinks(extraction.summary))
         lines.append("")
 
         # Changes
@@ -76,10 +127,11 @@ def generate_change_report(
             lines.append("")
             lines.append(f"**Materiality:** {change.materiality}")
             lines.append(f"**Confidence:** {change.confidence:.0%}")
-            lines.append(f"**Rationale:** {change.materiality_rationale}")
+            lines.append(f"**Rationale:** {_apply_wikilinks(change.materiality_rationale)}")
             lines.append("")
             if change.affected_articles:
-                lines.append(f"**Affected articles:** {', '.join(change.affected_articles)}")
+                linked_articles = [f"[[{a}]]" for a in change.affected_articles]
+                lines.append(f"**Affected articles:** {', '.join(linked_articles)}")
                 lines.append("")
             if change.effective_date:
                 lines.append(f"**Effective date:** {change.effective_date}")
@@ -134,6 +186,13 @@ def generate_objective_note(
         if citation_matches(objective.verbatim_quote, source_text):
             citation_status = "verified"
 
+    # Apply wikilinks to body fields (skip self-article)
+    who = _apply_wikilinks(objective.who, objective.article)
+    what = _apply_wikilinks(objective.what, objective.article)
+    where = _apply_wikilinks(objective.where, objective.article)
+    quote = _apply_wikilinks(objective.verbatim_quote, objective.article)
+    deadline = _apply_wikilinks(objective.deadline, objective.article) if objective.deadline else None
+
     lines = [
         "---",
         "type: compliance-objective",
@@ -153,20 +212,20 @@ def generate_objective_note(
         "",
         "## Obligation",
         "",
-        f"**Who:** {objective.who}",
-        f"**What:** {objective.what}",
-        f"**Where:** {objective.where}",
+        f"**Who:** {who}",
+        f"**What:** {what}",
+        f"**Where:** {where}",
     ]
 
-    if objective.deadline:
-        lines.append(f"**Deadline:** {objective.deadline}")
+    if deadline:
+        lines.append(f"**Deadline:** {deadline}")
 
     lines.extend([
         f"**Materiality:** {objective.materiality}",
         "",
         "## Legal Basis",
         "",
-        f"> {objective.verbatim_quote}",
+        f"> {quote}",
         "",
         f"*{objective.article}, {regulation_name}* [{citation_status}]",
         "",
