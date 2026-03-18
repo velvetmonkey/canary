@@ -34,3 +34,33 @@ sources:
     label: "UK Financial Services and Markets Act 2023"
     fetcher: ukleg
     priority: high
+
+  - id: UK-CLIMATE-CHANGE
+    celex_id: "ukpga/2008/27"
+    label: "UK Climate Change Act 2008"
+    fetcher: ukleg
+    priority: high
+
+  - id: UK-TCFD-REGS
+    celex_id: "uksi/2022/31"
+    label: "UK Climate-Related Financial Disclosures Regulations 2022"
+    fetcher: ukleg
+    priority: critical
+
+  - id: UK-SDR-REGS
+    celex_id: "uksi/2023/1206"
+    label: "UK Sustainability Disclosure Requirements (Investment Labels) Regs 2023"
+    fetcher: ukleg
+    priority: critical
+
+  - id: UK-ESOS-REGS
+    celex_id: "uksi/2022/1256"
+    label: "UK Energy Savings Opportunity Scheme (Amendment) Regs 2022"
+    fetcher: ukleg
+    priority: high
+
+  - id: UK-ENV-ACT
+    celex_id: "ukpga/2021/30"
+    label: "UK Environment Act 2021"
+    fetcher: ukleg
+    priority: high

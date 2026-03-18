@@ -9,6 +9,7 @@ from canary.analysis.verifier import VerificationReport
 
 # Regulatory entities to wikilink in body text
 _REGULATION_ENTITIES = [
+    # EU regulations
     "SFDR",
     "EU Taxonomy Regulation",
     "EU Taxonomy",
@@ -23,7 +24,21 @@ _REGULATION_ENTITIES = [
     "CRR",
     "CRD",
     "Benchmarks Regulation",
+    # UK regulations
+    "FSMA 2000",
+    "FSMA 2023",
+    "Climate Change Act 2008",
+    "Environment Act 2021",
+    "Companies Act 2006",
+    "TCFD",
+    "SDR",
+    "FCA",
+    "PRA",
+    # International
     "Paris Agreement",
+    "GHG Protocol",
+    "ISSB",
+    "TNFD",
 ]
 
 # Match "Article N", "Article N(X)", "Article N(X)(y)" etc.
