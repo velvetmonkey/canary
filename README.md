@@ -574,6 +574,8 @@ Each source needs:
     └── 2026-03-11.md                   # Daily log entries
 ```
 
+> **See [`output/`](output/) for real extraction output** — 373 compliance objectives across 5 EU regulations, each with verified citations. This is actual CANARY output, not synthetic examples.
+
 ### Output Formats
 
 #### Change report (YAML frontmatter)

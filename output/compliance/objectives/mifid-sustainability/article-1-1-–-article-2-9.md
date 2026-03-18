@@ -1,0 +1,33 @@
+---
+type: compliance-objective
+regulation: >-
+  Commission Delegated Regulation (EU) 2021/1253 amending Delegated Regulation
+  (EU) 2017/565 (MiFID II Sustainability Integration)
+celex_id: 32021R1253
+article: Article 1(1) – Article 2(9)
+obligation_type: process
+materiality: medium
+status: active
+extracted: 2026-03-12T00:00:00.000Z
+citation: verified
+source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32021R1253'
+canary_run_id: obj-169ba94d7e3a
+date: '2026-03-12'
+created: '2026-03-12T03:12:36.018Z'
+---
+
+# Article 1(1) – Article 2(9) — Apply SFDR definition of 'sustainability risks' consistently
+
+## Obligation
+
+**Who:** Investment firms
+**What:** Firms must use the definition of 'sustainability risks' as defined in Article 2(22) of SFDR (Regulation (EU) 2019/2088) consistently across all relevant internal risk management processes, policies, and disclosures.
+**Where:** All internal risk policies, governance frameworks, and disclosures referencing sustainability risks
+**Deadline:** 2 August 2022
+**Materiality:** medium
+
+## Legal Basis
+
+> "sustainability risks" means sustainability risks as defined in Article 2, point (22), of Regulation (EU) 2019/2088.
+
+*Article 1(1) – Article 2(9), Commission Delegated Regulation (EU) 2021/1253 amending Delegated Regulation (EU) 2017/565 (MiFID II Sustainability Integration)* [verified]
