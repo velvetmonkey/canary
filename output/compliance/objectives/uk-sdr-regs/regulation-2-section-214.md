@@ -11,17 +11,17 @@ status: active
 extracted: '2026-03-18'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:uksi/2023/1206'
-canary_run_id: obj-acc79581256e
+canary_run_id: obj-c79fff94b27e
 date: '2026-03-18'
-created: '2026-03-18T17:10:40.866Z'
+created: '2026-03-18T17:47:51.299Z'
 ---
 # Regulation 2 / Section 214 — Treasury monetary penalties for financial sanctions breaches
 
 ## Obligation
 
-**Who:** HM Treasury; financial market participants subject to financial sanctions
-**What:** [[Section 214]] clarifies that the Treasury can impose monetary penalties under the Policing and Crime Act 2017 for breaches of provisions supplemental to financial sanctions. Firms must ensure full compliance with financial sanctions obligations or face monetary penalty enforcement from 15 November 2023.
-**Where:** Firm-wide sanctions compliance frameworks and controls
+**Who:** Financial market participants and regulated firms subject to UK financial sanctions
+**What:** Firms must ensure compliance with provisions supplemental to financial sanctions, as the Treasury is now empowered to impose monetary penalties under the Policing and Crime Act 2017 for breaches of such provisions. Compliance officers should review sanctions-related controls immediately.
+**Where:** Internally, across sanctions compliance frameworks and policies
 **Deadline:** 15 November 2023
 **Materiality:** high
 

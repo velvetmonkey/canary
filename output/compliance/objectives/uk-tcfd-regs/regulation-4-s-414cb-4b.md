@@ -11,16 +11,16 @@ status: active
 extracted: '2026-03-18'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:uksi/2022/31'
-canary_run_id: obj-4703d039df07
+canary_run_id: obj-778d8003691c
 date: '2026-03-18'
-created: '2026-03-18T16:57:47.447Z'
+created: '2026-03-18T17:46:55.812Z'
 ---
 # Regulation 4 / s.414CB(4B) — Disclose clear and reasoned explanation when omitting climate disclosures
 
 ## Obligation
 
 **Who:** Directors of in-scope companies that omit any climate-related financial disclosure under s.414CB(4A)
-**What:** Where directors exercise the omission right, the non-financial and sustainability information statement must include a clear and reasoned explanation of the directors' belief that the omitted disclosure was not necessary. This prevents silent omissions and ensures accountability.
+**What:** Where directors exercise the omission right, the non-financial and sustainability information statement must include a clear and reasoned explanation of the directors' belief justifying the omission. A bare omission without explanation is not permitted.
 **Where:** In the non-financial and sustainability information statement within the strategic report
 **Materiality:** high
 

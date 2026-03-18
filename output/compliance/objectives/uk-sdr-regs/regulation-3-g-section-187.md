@@ -11,17 +11,17 @@ status: active
 extracted: '2026-03-18'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:uksi/2023/1206'
-canary_run_id: obj-acc79581256e
+canary_run_id: obj-c79fff94b27e
 date: '2026-03-18'
-created: '2026-03-18T17:10:43.301Z'
+created: '2026-03-18T17:47:53.719Z'
 ---
-# Regulation 3(g) / Section 187 — Enhanced due diligence referencing FATF high-risk country list
+# Regulation 3(g) / Section 187 — Enhanced due diligence referencing live FATF high-risk country list
 
 ## Obligation
 
-**Who:** Financial market participants and regulated businesses subject to AML/CTF obligations
-**What:** Regulations concerning enhanced due diligence (EDD) measures for AML and counter-terrorist financing purposes may now directly reference the FATF high-risk country list as it has effect from time to time. Firms must update their EDD policies and procedures to align dynamically with the current FATF list.
-**Where:** AML/CTF policies, EDD procedures, and client onboarding frameworks
+**Who:** Financial market participants and regulated firms subject to UK AML/CTF obligations
+**What:** Firms must update their enhanced due diligence (EDD) procedures to reference the FATF high-risk country list as it has effect from time to time, rather than a static list. This requires dynamic monitoring and updating of EDD triggers.
+**Where:** In AML/CTF policies, procedures, and client onboarding/review processes
 **Deadline:** 15 January 2024
 **Materiality:** high
 

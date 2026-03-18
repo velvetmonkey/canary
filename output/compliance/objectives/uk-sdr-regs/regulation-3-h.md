@@ -11,17 +11,17 @@ status: active
 extracted: '2026-03-18'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:uksi/2023/1206'
-canary_run_id: obj-acc79581256e
+canary_run_id: obj-c79fff94b27e
 date: '2026-03-18'
-created: '2026-03-18T17:10:48.178Z'
+created: '2026-03-18T17:47:58.565Z'
 ---
-# Regulation 3(h) — Information sharing between businesses to prevent economic crime
+# Regulation 3(h) — Information sharing between businesses to combat economic crime
 
 ## Obligation
 
-**Who:** Regulated businesses and financial market participants
-**What:** New provisions enable and govern disclosures of information between certain businesses for the purposes of preventing, detecting, or investigating economic crime offences. Firms should establish or update information-sharing protocols and legal gateways to leverage and comply with these provisions.
-**Where:** Inter-firm information sharing agreements, compliance and legal frameworks
+**Who:** Financial market participants and regulated firms engaged in economic crime prevention
+**What:** Firms may now share information with certain other businesses for the purposes of preventing, detecting, or investigating economic crime offences. Firms should establish or update information-sharing agreements and data governance frameworks accordingly.
+**Where:** In inter-firm information sharing agreements, data protection policies, and economic crime frameworks
 **Deadline:** 15 January 2024
 **Materiality:** high
 

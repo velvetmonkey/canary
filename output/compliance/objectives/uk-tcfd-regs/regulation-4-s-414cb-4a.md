@@ -11,17 +11,17 @@ status: active
 extracted: '2026-03-18'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:uksi/2022/31'
-canary_run_id: obj-4703d039df07
+canary_run_id: obj-778d8003691c
 date: '2026-03-18'
-created: '2026-03-18T16:57:45.014Z'
+created: '2026-03-18T17:46:53.378Z'
 ---
-# Regulation 4 / s.414CB(4A) — Directors may omit immaterial climate disclosures with justification
+# Regulation 4 / s.414CB(4A) — Directors may omit certain disclosures only if not necessary for understanding
 
 ## Obligation
 
 **Who:** Directors of in-scope companies
-**What:** Directors may omit all or part of certain climate-related financial disclosures (subsections (e)–(h), covering metrics and targets) if they reasonably believe the information is not necessary for understanding the business, having regard to its nature and manner of operation. This requires a formal directors' judgement and documented reasoning.
-**Where:** Directors' decision-making process; outcome reflected in the strategic report
+**What:** Directors may omit all or part of specific climate-related financial disclosures (those under s.414CB(2A)(e)–(h)) only where they reasonably believe, having regard to the nature and manner of the business, that the disclosure is not necessary for an understanding of the business. This is a narrow, reasoned exemption requiring active director judgement.
+**Where:** Applied within the preparation of the non-financial and sustainability information statement
 **Materiality:** high
 
 ## Legal Basis
