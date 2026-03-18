@@ -874,4 +874,4 @@ Modern Python stack (uv + pyproject.toml + uv.lock, Python version pinned, ruff 
 
 ## License
 
-Copyright (c) 2026 Ben Campbell. All rights reserved. See [LICENSE](LICENSE).
+Copyright (c) 2026 velvetmonkey. All rights reserved. See [LICENSE](LICENSE).
