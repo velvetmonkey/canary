@@ -76,3 +76,9 @@ sources:
     label: "Irish Companies Act 2014"
     fetcher: irishstatute
     priority: high
+
+  - id: US-SOX
+    celex_id: "PLAW-107publ204"
+    label: "US Sarbanes-Oxley Act 2002"
+    fetcher: govinfo
+    priority: high

@@ -68,7 +68,10 @@ def _get_fetcher(fetcher_type: str) -> BaseFetcher:
     if fetcher_type == "irishstatute":
         from canary.fetchers.irishstatute import IrishStatuteFetcher
         return IrishStatuteFetcher()
-    raise ValueError(f"Unknown fetcher type: {fetcher_type!r}. Available: eurlex, ukleg, nzleg, irishstatute")
+    if fetcher_type == "govinfo":
+        from canary.fetchers.govinfo import GovInfoFetcher
+        return GovInfoFetcher()
+    raise ValueError(f"Unknown fetcher type: {fetcher_type!r}. Available: eurlex, ukleg, nzleg, irishstatute, govinfo")
 
 
 async def run_canary(
