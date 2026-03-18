@@ -112,13 +112,11 @@ async def run_canary(
             store.close()
             return 2
 
-    # Determine fetcher type from first source (all sources use same fetcher in a run)
-    fetcher_type = sources[0].get("fetcher", "eurlex")
-    fetcher = _get_fetcher(fetcher_type)
+    # Group sources by fetcher type and create fetcher instances
+    fetchers: dict[str, BaseFetcher] = {}
     vault_writer: VaultWriter | None = None
 
     set_store(store)
-    set_fetcher(fetcher)
 
     if vault_enabled:
         try:
@@ -141,6 +139,13 @@ async def run_canary(
                 "=== [%d/%d] %s (%s) ===",
                 idx, len(sources), source["label"], source["celex_id"],
             )
+
+            # Select the right fetcher for this source
+            fetcher_type = source.get("fetcher", "eurlex")
+            if fetcher_type not in fetchers:
+                fetchers[fetcher_type] = _get_fetcher(fetcher_type)
+            fetcher = fetchers[fetcher_type]
+            set_fetcher(fetcher)
             celex_id = source["celex_id"]
 
             # Track per-source metrics
@@ -220,7 +225,8 @@ async def run_canary(
             metrics.finish_source(source_metrics)
 
     finally:
-        await fetcher.close()
+        for f in fetchers.values():
+            await f.close()
 
         # Finalize and persist run metrics
         metrics.finish()
@@ -294,8 +300,8 @@ async def run_extract_objectives(
     )
 
     # Fetch the document
-    logger.info("[fetch] Fetching %s from EUR-Lex...", celex_id)
     fetcher_type = source.get("fetcher", "eurlex")
+    logger.info("[fetch] Fetching %s via %s...", celex_id, fetcher_type)
     fetcher = _get_fetcher(fetcher_type)
     try:
         text, _ = await fetcher.fetch_text(celex_id)
