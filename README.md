@@ -739,7 +739,7 @@ See [`config/sources.yaml`](config/sources.yaml) for the full list. 14 sources a
 
 *The following review was produced by Grok after examining the public repository, codebase, and documentation.*
 
-### Product Assessment — 9/10
+### Product Assessment
 
 CANARY is a focused, high-quality RegTech tool that solves a real pain point extremely well. It's **not** just another LLM wrapper — the verification layer and deterministic change detection make it trustworthy for compliance use. It's also part of a larger Obsidian + MCP ecosystem (Flywheel for querying, Crank for mutations), turning a vault into a live compliance knowledge graph.
 
@@ -760,7 +760,7 @@ CANARY is a focused, high-quality RegTech tool that solves a real pain point ext
 
 **Market fit:** Strong for EU sustainable finance teams, asset managers, consultants. No direct competitor combines hash-based change detection + mechanical verification + Obsidian MCP output this cleanly.
 
-### Code Assessment — 9/10
+### Code Assessment
 
 Modern Python stack (uv + pyproject.toml + uv.lock, Python version pinned, ruff linting). Structure is clean: `src/canary/` core modules, `tests/` with 91 tests, `config/` for sources.yaml.
 
