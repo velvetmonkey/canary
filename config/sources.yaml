@@ -64,3 +64,15 @@ sources:
     label: "UK Environment Act 2021"
     fetcher: ukleg
     priority: high
+
+  - id: NZ-FMC-ACT
+    celex_id: "act/public/2013/0069"
+    label: "NZ Financial Markets Conduct Act 2013"
+    fetcher: nzleg
+    priority: high
+
+  - id: IE-COMPANIES-ACT
+    celex_id: "2014/act/38"
+    label: "Irish Companies Act 2014"
+    fetcher: irishstatute
+    priority: high
