@@ -4,6 +4,44 @@
 
 Continuous monitoring of financial regulation across 5 jurisdictions — fetch changes, extract obligations, verify every citation, deliver audit-ready reports with cross-linked knowledge graph.
 
+## Table of Contents
+
+- [Data Sources](#data-sources)
+- [Extraction Output](#extraction-output)
+- [Part 1 — For Everyone](#part-1--for-everyone)
+  - [The Problem](#the-problem)
+  - [What CANARY Does](#what-canary-does)
+  - [Manual Process vs CANARY](#manual-process-vs-canary)
+  - [Guarantees and Trust Model](#guarantees-and-trust-model)
+  - [The Wider Lifecycle](#the-wider-lifecycle)
+- [Part 2 — Technical Deep Dive](#part-2--technical-deep-dive)
+  - [Architecture Overview](#architecture-overview)
+  - [Pipeline Nodes](#pipeline-nodes)
+  - [LangGraph State](#langgraph-state)
+  - [Pydantic Data Models](#pydantic-data-models)
+  - [Citation Verification](#citation-verification)
+  - [Chunked Extraction](#chunked-extraction)
+  - [Re-Quote Pipeline](#re-quote-pipeline)
+  - [EUR-Lex Fetcher](#eur-lex-fetcher)
+  - [SQLite Storage](#sqlite-storage)
+  - [Vault Integration](#vault-integration)
+  - [Observability](#observability)
+- [Part 3 — Operations](#part-3--operations)
+  - [Quick Start](#quick-start)
+  - [Commands](#commands)
+  - [Configuration](#configuration)
+  - [Vault Output Structure](#vault-output-structure)
+  - [Output Formats](#output-formats)
+  - [Testing](#testing)
+  - [Dependencies](#dependencies)
+  - [Design Philosophy](#design-philosophy)
+  - [Currently Monitored Sources](#currently-monitored-sources)
+  - [Roadmap / Phase 2](#roadmap--phase-2)
+- [Independent Code Review (Grok)](#independent-code-review-grok)
+  - [Product Assessment](#product-assessment)
+  - [Code Assessment](#code-assessment)
+- [License](#license)
+
 ### Data Sources
 
 | Fetcher | Jurisdiction | Source | URL pattern |
@@ -695,21 +733,31 @@ uv run ruff check src/ tests/                    # Lint
 
 ### Dependencies
 
-| Package | Purpose |
-|---------|---------|
-| `httpx` | Async HTTP client for EUR-Lex |
-| `tenacity` | Retry with exponential backoff |
-| `beautifulsoup4` + `lxml` | HTML parsing and text extraction |
-| `anthropic` | Claude API client |
-| `langchain-anthropic` | Claude structured output bridge |
-| `langgraph` | Pipeline orchestration (state machine) |
-| `langgraph-checkpoint-sqlite` | State persistence |
-| `pydantic` | Schema enforcement for extraction models |
-| `langchain-mcp-adapters` + `mcp` | Vault writes via Flywheel MCP |
-| `python-dotenv` | Environment configuration |
-| `pyyaml` | Source config parsing |
+| Package | Purpose | Why this choice | Outcome |
+|---------|---------|-----------------|---------|
+| `httpx` | Async HTTP client for EUR-Lex | Native async/await, HTTP/2, connection pooling. `requests` can't do concurrent fetches without threads. | Fetches 14 sources concurrently with ETag caching and proper rate limiting — each check completes in ~15s total. |
+| `tenacity` | Retry with exponential backoff | Declarative retry policies (decorators + composable strategies). Cleaner than hand-rolled retry loops. | EUR-Lex 429s and transient timeouts are handled automatically with configurable backoff (4–60s), keeping the pipeline resilient without manual intervention. |
+| `beautifulsoup4` + `lxml` | HTML parsing and text extraction | `lxml` is the fastest Python HTML parser. BeautifulSoup provides a tolerant API on top — important because EUR-Lex HTML is inconsistent across document types. | Reliable text extraction from messy legal HTML: strips navigation chrome, removes inline footnote markers that break citation matching, preserves whitespace structure. |
+| `anthropic` | Claude API client | Direct API access for token counting and cost tracking. | Precise per-run cost reporting ($0.05/source typical) and structured token metrics in the audit trail. |
+| `langchain-anthropic` | Claude structured output bridge | Pydantic-enforced structured output via `with_structured_output()`. Handles JSON schema generation, retries on malformed responses, and type coercion automatically. | Claude's extraction output is guaranteed to conform to the `RegulatoryChange` / `ComplianceObjective` schemas — no parsing failures, no missing fields. |
+| `langgraph` | Pipeline orchestration (state machine) | Explicit state machine with conditional edges. Each node is independently testable. The graph skips the LLM entirely when no change is detected. | Deterministic pipeline flow: fetch → detect → (skip if unchanged) → extract → verify → report → vault. Easy to add new nodes without refactoring. |
+| `langgraph-checkpoint-sqlite` | State persistence | Built-in checkpointing for LangGraph — resumes from last successful node on failure. | A crash mid-pipeline doesn't lose earlier work. Re-running picks up where it left off. |
+| `pydantic` | Schema enforcement for extraction models | Runtime type validation with clear error messages. Claude's structured output mode uses the Pydantic schema directly. | Every extracted change and objective is validated at the boundary — malformed LLM output is caught immediately, not downstream. |
+| `langchain-mcp-adapters` + `mcp` | Vault writes via Flywheel MCP | MCP (Model Context Protocol) provides a standard interface to the Obsidian vault through Flywheel. Writes are idempotent and deduplicated. | Change reports and compliance objectives land directly in Obsidian as structured, queryable notes — no manual import step. |
+| `python-dotenv` | Environment configuration | Standard `.env` file loading. | Single configuration point for API keys, paths, and model selection — no hardcoded secrets. |
+| `pyyaml` | Source config parsing | YAML is more readable than JSON for configuration with comments. | `sources.yaml` is human-editable: adding a new jurisdiction or regulation is a 5-line config change. |
 
 Dev: `pytest`, `pytest-asyncio`, `pytest-httpx`, `ruff`.
+
+#### Design Philosophy
+
+The technology choices follow three principles:
+
+1. **Verify, don't trust.** The LLM extracts structured data, but every citation is mechanically verified against source text. SHA-256 hashing provides deterministic change detection with zero false positives. Pydantic enforces schemas at every boundary. The system is designed so that AI failures are caught, not propagated.
+
+2. **Audit everything.** SQLite logs every run, every source check, every citation result with timestamps and token counts. Structured exit codes (0/1/2) make CI integration straightforward. Issue files provide forensic detail when something goes wrong. A regulator asking "when did you know?" gets a precise, timestamped answer.
+
+3. **Skip work that doesn't need doing.** The LangGraph conditional edge skips Claude entirely when a document hasn't changed. ETag caching avoids re-downloading unchanged content. Vault deduplication prevents duplicate writes. The result is ~$0.05 and ~15 seconds per source — cheap enough to run on every commit or every hour.
 
 ### Currently Monitored Sources
 
