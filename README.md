@@ -833,4 +833,4 @@ Modern Python stack (uv + pyproject.toml + uv.lock, Python version pinned, ruff 
 
 ## License
 
-Private — [velvetmonkey/canary](https://github.com/velvetmonkey/canary)
+Copyright (c) 2026 Ben Campbell. All rights reserved. See [LICENSE](LICENSE).
