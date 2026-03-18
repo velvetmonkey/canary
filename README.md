@@ -2,7 +2,37 @@
 
 **C**ompliance **AN**alysis and **A**utomated **R**egulatory **Y**ield
 
-Continuous monitoring of EU ESG regulation — fetch changes, extract obligations, verify every citation, deliver audit-ready reports.
+Continuous monitoring of financial regulation across 5 jurisdictions — fetch changes, extract obligations, verify every citation, deliver audit-ready reports with cross-linked knowledge graph.
+
+### Data Sources
+
+| Fetcher | Jurisdiction | Source | URL pattern |
+|---------|-------------|--------|-------------|
+| `eurlex` | EU | EUR-Lex | `eur-lex.europa.eu` |
+| `ukleg` | UK | UK Legislation | `legislation.gov.uk` |
+| `govinfo` | US | US GovInfo | `govinfo.gov` |
+| `nzleg` | NZ | NZ Legislation | `legislation.govt.nz` |
+| `irishstatute` | IE | Irish Statute Book | `irishstatutebook.ie` |
+
+### Extraction Output
+
+> **See [`output/`](output/) for real extraction output** — 453 compliance objectives across 14 regulations in 5 jurisdictions, each with verified citations and cross-linked wikilinks.
+
+| Source | Regulation | Objectives |
+|--------|-----------|-----------|
+| `SFDR-L1` | SFDR Level 1 — Reg (EU) 2019/2088 | 35 |
+| `SFDR-RTS` | SFDR RTS — Delegated Reg (EU) 2022/1288 | 112 |
+| `SFDR-2-PROPOSAL` | SFDR 2.0 Amendment Proposal (Nov 2025) | 123 |
+| `EU-TAXONOMY` | EU Taxonomy Regulation (EU) 2020/852 | 54 |
+| `MIFID-SUSTAINABILITY` | MiFID II Sustainability Preferences | 44 |
+| `UK-FSA-2023` | UK Financial Services and Markets Act 2023 | 5 |
+| `UK-TCFD-REGS` | UK Climate-Related Financial Disclosures Regs 2022 | 10 |
+| `UK-SDR-REGS` | UK Sustainability Disclosure Requirements Regs 2023 | 10 |
+| `UK-CLIMATE-CHANGE` | UK Climate Change Act 2008 | 10 |
+| `UK-ENV-ACT` | UK Environment Act 2021 | 10 |
+| `US-SOX` | US Sarbanes-Oxley Act 2002 | 10 |
+| `NZ-FMC-ACT` | NZ Financial Markets Conduct Act 2013 | 20 |
+| `IE-COMPANIES-ACT` | Irish Companies Act 2014 | 10 |
 
 ---
 
@@ -574,7 +604,7 @@ Each source needs:
     └── 2026-03-11.md                   # Daily log entries
 ```
 
-> **See [`output/`](output/) for real extraction output** — 373 compliance objectives across 5 EU regulations, each with verified citations. This is actual CANARY output, not synthetic examples.
+> **See [`output/`](output/) for real extraction output** — 453 compliance objectives across 14 regulations in 5 jurisdictions, each with verified citations and cross-linked wikilinks. This is actual CANARY output, not synthetic examples.
 
 ### Output Formats
 
@@ -683,18 +713,22 @@ Dev: `pytest`, `pytest-asyncio`, `pytest-httpx`, `ruff`.
 
 ### Currently Monitored Sources
 
-| ID | CELEX | Regulation | Priority |
-|----|-------|-----------|----------|
-| `SFDR-L1` | 32019R2088 | SFDR Level 1 — Reg (EU) 2019/2088 | critical |
-| `SFDR-RTS` | 32022R1288 | SFDR RTS — Delegated Reg (EU) 2022/1288 | critical |
-| `SFDR-2-PROPOSAL` | 52025PC0841 | SFDR 2.0 Amendment Proposal (Nov 2025) | high |
-| `EU-TAXONOMY` | 32020R0852 | EU Taxonomy Regulation (EU) 2020/852 | critical |
-| `MIFID-SUSTAINABILITY` | 32021R1253 | MiFID II Sustainability Preferences | high |
+See [`config/sources.yaml`](config/sources.yaml) for the full list. 14 sources across 5 jurisdictions:
+
+**EU** (via EUR-Lex): SFDR L1, SFDR RTS, SFDR 2.0 Proposal, EU Taxonomy, MiFID II Sustainability
+
+**UK** (via legislation.gov.uk): Financial Services Act 2023, TCFD Regulations 2022, SDR Regulations 2023, Climate Change Act 2008, Environment Act 2021, ESOS Regulations 2022
+
+**US** (via GovInfo): Sarbanes-Oxley Act 2002
+
+**NZ** (via legislation.govt.nz): Financial Markets Conduct Act 2013
+
+**IE** (via Irish Statute Book): Companies Act 2014
 
 ### Roadmap / Phase 2
 
 - **Compliance matrix RAG** — cross-reference extracted objectives against firm policies to identify gaps.
-- **More fetchers** — FCA, BaFin, ESMA Q&A, national transposition registers.
+- **More sources** — SEC rules (when API available), FCA Handbook, BaFin, ESMA Q&A.
 - **Scheduling / cron** — automated periodic runs via systemd timer or cron.
 - **Alerting** — Slack/email notifications on change detection or unverified citations.
 - **Obligation tracking dashboard** — Obsidian queries or dedicated UI for compliance posture over time.
