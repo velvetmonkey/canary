@@ -141,7 +141,7 @@ class TestVaultWriter:
         assert not path.endswith("-")
 
     async def test_write_objective_passes_overwrite_and_wikilinks(self):
-        """Vault writer must pass overwrite=True and suggest_wikilinks=True."""
+        """Vault writer must pass overwrite=True and suggestOutgoingLinks=True."""
         writer = VaultWriter()
         mock_create = AsyncMock()
         mock_create.ainvoke = AsyncMock(return_value=None)
@@ -150,7 +150,7 @@ class TestVaultWriter:
         await writer.write_objective("# Note", "Article 3", "sfdr-l1")
         call_args = mock_create.ainvoke.call_args[0][0]
         assert call_args["overwrite"] is True
-        assert call_args["suggest_wikilinks"] is True
+        assert call_args["suggestOutgoingLinks"] is True
 
     async def test_write_objective_simple_article(self):
         """Simple article ref without parens."""

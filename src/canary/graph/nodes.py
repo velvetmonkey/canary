@@ -2,6 +2,7 @@
 
 import json
 import logging
+import time
 
 from canary.analysis.extractor import extract_changes
 from canary.analysis.mapper import tag_changes
@@ -43,14 +44,19 @@ async def fetch_source(state: CANARYState) -> dict:
     source = state["current_source"]
     celex_id = source["celex_id"]
 
-    logger.info("Fetching %s (%s)", source["label"], celex_id)
+    logger.info("[fetch] Fetching %s from EUR-Lex...", celex_id)
+    t0 = time.monotonic()
     try:
         text, _ = await _fetcher.fetch_text(celex_id)
+        elapsed = time.monotonic() - t0
         if text is None:
+            logger.info("[fetch] %s — ETag unchanged, skipped (%.1fs)", celex_id, elapsed)
             return {"fetched_text": None, "errors": ["ETag unchanged — skipping"]}
+        logger.info("[fetch] %s — %d chars fetched (%.1fs)", celex_id, len(text), elapsed)
         return {"fetched_text": text}
     except Exception as e:
-        logger.error("Fetch failed for %s: %s", celex_id, e)
+        elapsed = time.monotonic() - t0
+        logger.error("[fetch] %s — failed after %.1fs: %s", celex_id, elapsed, e)
         return {"fetched_text": None, "errors": [f"Fetch error: {e}"]}
 
 
@@ -70,7 +76,7 @@ async def detect_change(state: CANARYState) -> dict:
     is_first_run = existing is None
 
     if is_first_run:
-        logger.info("First run for %s — storing baseline", celex_id)
+        logger.info("[detect] %s — first run, storing baseline (hash: %s…)", celex_id, new_hash[:12])
         _store.upsert_state(celex_id, new_hash, text)
         _store.log_change(celex_id, None, new_hash, run_id=state.get("run_id"))
         return {
@@ -83,7 +89,7 @@ async def detect_change(state: CANARYState) -> dict:
 
     old_hash = existing["hash"]
     if old_hash == new_hash:
-        logger.info("No change detected for %s", celex_id)
+        logger.info("[detect] %s — no change (hash: %s…)", celex_id, new_hash[:12])
         _store.upsert_state(celex_id, new_hash, text)  # updates last_checked
         return {"changed": False, "is_first_run": False, "new_hash": new_hash, "old_hash": old_hash}
 
@@ -95,7 +101,7 @@ async def detect_change(state: CANARYState) -> dict:
     _store.upsert_state(celex_id, new_hash, text)
     _store.log_change(celex_id, old_hash, new_hash, diff_summary=diff_summary, run_id=state.get("run_id"))
 
-    logger.info("Change detected for %s — %d diff lines", celex_id, len(diff_lines))
+    logger.info("[detect] %s — CHANGE DETECTED (%d diff lines)", celex_id, len(diff_lines))
     return {
         "changed": True,
         "is_first_run": False,
@@ -112,24 +118,35 @@ async def extract_obligations(state: CANARYState) -> dict:
     celex_id = state["current_source"]["celex_id"]
 
     if not diff_text:
+        logger.info("[extract] %s — no diff, skipping extraction", celex_id)
         return {"extraction": None}
 
     model = state.get("model", "claude-sonnet-4-6")
+    logger.info("[extract] %s — extracting changes via %s...", celex_id, model)
+    t0 = time.monotonic()
     try:
         extraction, extraction_metrics = await extract_changes(diff_text, source_text, model=model)
     except Exception as e:
-        logger.error("Extraction failed for %s: %s", celex_id, e)
+        elapsed = time.monotonic() - t0
+        logger.error("[extract] %s — failed after %.1fs: %s", celex_id, elapsed, e)
         return {
             "extraction": None,
             "extraction_metrics": None,
             "errors": state.get("errors", []) + [f"Extraction error: {e}"],
         }
 
+    elapsed = time.monotonic() - t0
     extraction.source_celex_id = celex_id
 
     # Quality check: non-trivial diff but zero changes extracted
     if diff_text.strip() and len(extraction.changes) == 0:
-        logger.warning("Extraction returned 0 changes for non-empty diff on %s", celex_id)
+        logger.warning("[extract] %s — non-empty diff but 0 changes extracted (%.1fs)", celex_id, elapsed)
+    else:
+        logger.info(
+            "[extract] %s — %d change(s) extracted (%.1fs, %d/%d tokens)",
+            celex_id, len(extraction.changes), elapsed,
+            extraction_metrics.input_tokens, extraction_metrics.output_tokens,
+        )
 
     return {"extraction": extraction, "extraction_metrics": extraction_metrics}
 
@@ -138,16 +155,24 @@ async def verify_citations_node(state: CANARYState) -> dict:
     """Mechanically verify all citations in the extraction."""
     extraction = state.get("extraction")
     source_text = state.get("fetched_text", "")
+    celex_id = state["current_source"]["celex_id"]
 
     if extraction is None:
         return {"verification": None}
 
+    logger.info("[verify] %s — verifying citations...", celex_id)
+    t0 = time.monotonic()
     report = verify_citations(extraction, source_text)
-    if not report.all_verified:
+    elapsed = time.monotonic() - t0
+
+    total = len(report.results)
+    verified = total - report.unverified_count
+    if report.all_verified:
+        logger.info("[verify] %s — %d/%d citations verified (%.1fs)", celex_id, verified, total, elapsed)
+    else:
         logger.warning(
-            "%d unverified citations for %s",
-            report.unverified_count,
-            state["current_source"]["celex_id"],
+            "[verify] %s — %d/%d citations verified, %d UNVERIFIED (%.1fs)",
+            celex_id, verified, total, report.unverified_count, elapsed,
         )
     return {"verification": report}
 
@@ -155,6 +180,7 @@ async def verify_citations_node(state: CANARYState) -> dict:
 async def output_results(state: CANARYState) -> dict:
     """Generate and print the change report."""
     source = state["current_source"]
+    celex_id = source["celex_id"]
     extraction = state.get("extraction")
     verification = state.get("verification")
 
@@ -162,21 +188,21 @@ async def output_results(state: CANARYState) -> dict:
         result = {
             "status": "baseline_stored",
             "source": source["label"],
-            "celex_id": source["celex_id"],
+            "celex_id": celex_id,
             "hash": state.get("new_hash"),
             "message": "First run — baseline indexed, no changes to report.",
         }
-        logger.info("Baseline stored for %s: %s", source["celex_id"], json.dumps(result))
+        logger.info("[output] %s — baseline stored (hash: %s…)", celex_id, (state.get("new_hash") or "")[:12])
         return {"report": json.dumps(result)}
 
     if not state.get("changed"):
         result = {
             "status": "no_change",
             "source": source["label"],
-            "celex_id": source["celex_id"],
+            "celex_id": celex_id,
             "message": "No changes detected.",
         }
-        logger.info("No change for %s", source["celex_id"])
+        logger.info("[output] %s — no change", celex_id)
         return {"report": json.dumps(result)}
 
     # Generate markdown report
@@ -192,15 +218,12 @@ async def output_results(state: CANARYState) -> dict:
         run_id=state.get("run_id", "unknown"),
     )
 
-    result = {
-        "status": "changes_detected",
-        "source": source["label"],
-        "celex_id": source["celex_id"],
-        "change_count": len(extraction.changes) if extraction else 0,
-        "all_citations_verified": verification.all_verified if verification else None,
-        "tags": tags,
-    }
-    logger.info("Changes detected for %s: %s", source["celex_id"], json.dumps(result))
+    change_count = len(extraction.changes) if extraction else 0
+    citations_ok = verification.all_verified if verification else None
+    logger.info(
+        "[output] %s — report generated (%d changes, citations_ok=%s)",
+        celex_id, change_count, citations_ok,
+    )
     logger.debug("Markdown report:\n%s", report_md)
 
     return {"report": report_md, "tags": tags}
@@ -208,7 +231,10 @@ async def output_results(state: CANARYState) -> dict:
 
 async def write_to_vault(state: CANARYState) -> dict:
     """Write the change report to the Obsidian vault via Flywheel MCP."""
+    celex_id = state["current_source"]["celex_id"]
+
     if not state.get("vault_enabled") or _vault_writer is None:
+        logger.debug("[vault] %s — vault disabled or writer not connected", celex_id)
         return {}
 
     report = state.get("report")
@@ -217,8 +243,10 @@ async def write_to_vault(state: CANARYState) -> dict:
 
     # Only write vault reports for actual changes (not baselines or no-change)
     if not state.get("changed") or not report:
+        logger.info("[vault] %s — no changes to write", celex_id)
         return {}
 
+    logger.info("[vault] %s — writing change report to vault...", celex_id)
     vault_path = await _vault_writer.write_report(
         report_md=report,
         source_id=source["id"],
@@ -228,6 +256,7 @@ async def write_to_vault(state: CANARYState) -> dict:
     errors = []
     if vault_path is None and state.get("changed"):
         errors = state.get("errors", []) + ["Vault write failed for change report"]
+        logger.error("[vault] %s — write failed", celex_id)
 
     if vault_path:
         # Log to daily note
@@ -246,6 +275,7 @@ async def write_to_vault(state: CANARYState) -> dict:
             f"CANARY detected {change_count} {severity}-severity "
             f"{source['label']} change(s) — see [[{vault_path}]]"
         )
+        logger.info("[vault] %s — report written to %s", celex_id, vault_path)
 
     result = {"vault_path": vault_path}
     if errors:

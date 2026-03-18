@@ -130,11 +130,14 @@ async def run_canary(
 
     graph = build_graph()
 
-    logger.info("Processing %d sources", len(sources))
+    logger.info("Processing %d source(s): %s", len(sources), ", ".join(s["id"] for s in sources))
 
     try:
-        for source in sources:
-            logger.info("--- Processing: %s ---", source["label"])
+        for idx, source in enumerate(sources, 1):
+            logger.info(
+                "=== [%d/%d] %s (%s) ===",
+                idx, len(sources), source["label"], source["celex_id"],
+            )
             celex_id = source["celex_id"]
 
             # Track per-source metrics
@@ -222,8 +225,11 @@ async def run_canary(
 
         # Print run summary (machine-readable JSON to stdout)
         summary = metrics.summary()
-        logger.info("Run complete: %d sources, %d changes, %d errors",
-                     summary["sources_checked"], summary["changes_detected"], summary["errors"])
+        logger.info(
+            "=== Run complete: %d source(s), %d change(s), %d error(s), %.1fs ===",
+            summary["sources_checked"], summary["changes_detected"],
+            summary["errors"], summary.get("duration_ms", 0) / 1000,
+        )
         print(json.dumps(summary, indent=2))
 
         # Write issues file
@@ -279,9 +285,13 @@ async def run_extract_objectives(
     celex_id = source["celex_id"]
 
     count_label = str(count) if count else "all"
-    logger.info("Extracting %s objectives from %s (%s)", count_label, source["label"], celex_id)
+    logger.info(
+        "=== Extracting %s objectives from %s (%s) ===",
+        count_label, source["label"], celex_id,
+    )
 
     # Fetch the document
+    logger.info("[fetch] Fetching %s from EUR-Lex...", celex_id)
     fetcher_type = source.get("fetcher", "eurlex")
     fetcher = _get_fetcher(fetcher_type)
     try:
@@ -299,9 +309,10 @@ async def run_extract_objectives(
         issues.write()
         return 2
 
-    logger.info("Fetched %d chars", len(text))
+    logger.info("[fetch] %s — %d chars fetched", celex_id, len(text))
 
     # Extract objectives via Claude
+    logger.info("[extract] Extracting objectives via Claude...")
     try:
         extraction, obj_metrics = await extract_objectives(text, count=count, model=model)
     except Exception as e:
@@ -311,7 +322,7 @@ async def run_extract_objectives(
 
     chunks_info = f", {obj_metrics.chunks} chunks" if obj_metrics.chunks > 1 else ""
     logger.info(
-        "Extracted %d objectives — %s, %.1fs, %d/%d tokens%s",
+        "[extract] %d objectives extracted (%s, %.1fs, %d/%d tokens%s)",
         len(extraction.objectives),
         obj_metrics.model,
         obj_metrics.duration_ms / 1000,
@@ -334,7 +345,7 @@ async def run_extract_objectives(
     ]
     if unverified_objs:
         logger.info(
-            "%d/%d citations unverified — attempting re-quote",
+            "[verify] %d/%d citations unverified — attempting re-quote...",
             len(unverified_objs), len(extraction.objectives),
         )
         try:
@@ -365,9 +376,11 @@ async def run_extract_objectives(
     # Connect vault writer
     vault_writer: VaultWriter | None = None
     if vault_enabled:
+        logger.info("[vault] Connecting to Flywheel MCP server...")
         try:
             vault_writer = VaultWriter()
             await vault_writer.connect()
+            logger.info("[vault] Connected — writing %d objectives to vault", len(extraction.objectives))
         except Exception as e:
             issues.error("vault", "connect", f"Vault connection failed: {e}")
             vault_writer = None
@@ -406,18 +419,17 @@ async def run_extract_objectives(
                 f"{obj.article} — low materiality objective may not be relevant",
             )
 
+        citation_tag = "verified" if "citation: verified" in note_md else "UNVERIFIED"
         logger.info(
-            "Objective %d/%d: %s — %s (type=%s, materiality=%s)",
+            "[objective %d/%d] %s — %s (type=%s, materiality=%s, citation=%s)",
             i, len(extraction.objectives), obj.article, obj.title,
-            obj.obligation_type, obj.materiality,
+            obj.obligation_type, obj.materiality, citation_tag,
         )
 
         if vault_writer:
             reg_short = source["id"].lower()
             path = await vault_writer.write_objective(note_md, obj.article, reg_short)
-            if path:
-                logger.info("  Written to vault: %s", path)
-            else:
+            if not path:
                 issues.error(
                     "vault", celex_id,
                     f"Failed to write {obj.article} to vault",
@@ -425,6 +437,7 @@ async def run_extract_objectives(
 
     # Write regulation README index
     if vault_writer:
+        from canary.output.vault import _split_frontmatter
         reg_short = source["id"].lower()
         readme_md = generate_regulation_readme(
             regulation_name=extraction.regulation_name,
@@ -433,20 +446,29 @@ async def run_extract_objectives(
             verified_articles=verified_articles,
             run_id=run_id,
         )
+        fm, body = _split_frontmatter(readme_md)
         try:
             await vault_writer._call_tool(
                 "vault_create_note",
                 {
-                    "path": f"work/compliance/objectives/{reg_short}/README.md",
-                    "content": readme_md,
+                    "path": f"{vault_writer._output_root}/objectives/{reg_short}/README.md",
+                    "content": body,
+                    "frontmatter": fm,
                     "overwrite": True,
+                    "suggestOutgoingLinks": True,
                 },
             )
-            logger.info("Wrote regulation index to %s/README.md", reg_short)
+            logger.info("Wrote regulation index: %s/README.md", reg_short)
         except Exception as e:
             logger.warning("Failed to write regulation index: %s", e)
 
-    # Summary (machine-readable JSON to stdout)
+    # Summary
+    total_citations = verified_count + unverified_count
+    logger.info(
+        "=== Complete: %d objectives, %d/%d citations verified ===",
+        len(extraction.objectives), verified_count, total_citations,
+    )
+
     summary = {
         "run_id": run_id,
         "source": source["label"],
@@ -455,7 +477,7 @@ async def run_extract_objectives(
         "chunks": obj_metrics.chunks,
         "objectives": len(extraction.objectives),
         "citations_verified": verified_count,
-        "citations_total": verified_count + unverified_count,
+        "citations_total": total_citations,
         "tokens_in": obj_metrics.input_tokens,
         "tokens_out": obj_metrics.output_tokens,
         "duration_s": round(obj_metrics.duration_ms / 1000, 1),
@@ -658,7 +680,8 @@ def main() -> None:
 
     logging.basicConfig(
         level=log_level,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        format="%(asctime)s %(levelname)-5s %(message)s",
+        datefmt="%H:%M:%S",
     )
 
     model = _resolve_model(getattr(args, "model", None))
