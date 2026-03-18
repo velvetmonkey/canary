@@ -41,26 +41,31 @@ _REGULATION_ENTITIES = [
     "TNFD",
 ]
 
-# Match "Article N", "Article N(X)", "Article N(X)(y)" etc.
-_ARTICLE_RE = re.compile(r"(?<!\[\[)(Article \d+(?:\(\d+\))*(?:\([a-z]\))*)(?![\w\]])")
+# Match legal cross-references: Article/Section/Regulation/Schedule/Part/Paragraph N(X)(y)
+_LEGAL_REF_RE = re.compile(
+    r"(?<!\[\[)"
+    r"((?:Article|Section|Regulation|Schedule|Part|Paragraph) \d+(?:\(\d+\))*(?:\([a-z]\))*)"
+    r"(?![\w\]])"
+)
 
 
 def _apply_wikilinks(text: str, self_article: str | None = None) -> str:
-    """Apply wikilinks to known regulatory entities and article cross-references.
+    """Apply wikilinks to known regulatory entities and legal cross-references.
 
-    - Links article references: Article 8(1) → [[Article 8(1)]]
+    - Links legal references: Article 8(1), Section 16, Regulation 3(10),
+      Schedule 2, Part 1, Paragraph 13 → [[...]]
     - Links regulation short names: SFDR → [[SFDR]]
-    - Skips self-references (the note's own article)
+    - Skips self-references (the note's own article/section)
     - Skips text already inside wikilinks
     """
-    # Link article references (skip self-links)
-    def _link_article(m: re.Match) -> str:
+    # Link legal references (skip self-links)
+    def _link_ref(m: re.Match) -> str:
         ref = m.group(1)
         if self_article and ref == self_article:
             return ref
         return f"[[{ref}]]"
 
-    text = _ARTICLE_RE.sub(_link_article, text)
+    text = _LEGAL_REF_RE.sub(_link_ref, text)
 
     # Link regulation entities (longest first to avoid partial matches)
     for entity in sorted(_REGULATION_ENTITIES, key=len, reverse=True):
