@@ -59,7 +59,10 @@ def _get_fetcher(fetcher_type: str) -> BaseFetcher:
     """Factory for fetcher instances based on type string."""
     if fetcher_type == "eurlex":
         return EurLexFetcher()
-    raise ValueError(f"Unknown fetcher type: {fetcher_type!r}. Available: eurlex")
+    if fetcher_type == "ukleg":
+        from canary.fetchers.ukleg import UKLegislationFetcher
+        return UKLegislationFetcher()
+    raise ValueError(f"Unknown fetcher type: {fetcher_type!r}. Available: eurlex, ukleg")
 
 
 async def run_canary(

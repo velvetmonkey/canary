@@ -28,3 +28,9 @@ sources:
     label: "MiFID II Sustainability Preferences — Delegated Reg (EU) 2021/1253"
     fetcher: eurlex
     priority: high
+
+  - id: UK-FSA-2023
+    celex_id: "ukpga/2023/29"
+    label: "UK Financial Services and Markets Act 2023"
+    fetcher: ukleg
+    priority: high
