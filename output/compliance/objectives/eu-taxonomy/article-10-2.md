@@ -9,14 +9,13 @@ article: Article 10(2)
 obligation_type: process
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32020R0852'
 canary_run_id: obj-78872873b64e
 date: '2026-03-12'
 created: '2026-03-12T20:21:40.192Z'
 ---
-
 # Article 10(2) — Transitional activities: conditions for climate change mitigation qualification
 
 ## Obligation
@@ -30,4 +29,4 @@ created: '2026-03-12T20:21:40.192Z'
 
 > an economic activity for which there is no technologically and economically feasible low-carbon alternative shall qualify as contributing substantially to climate change mitigation where it supports the transition to a climate-neutral economy consistent with a pathway to limit the temperature increase to 1,5 0C above pre-industrial levels, including by phasing out greenhouse gas emissions, in particular emissions from solid fossil fuels.
 
-*Article 10(2), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment (EU Taxonomy Regulation)* [verified]
+*Article 10(2), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment ([[EU Taxonomy Regulation]])* [verified]

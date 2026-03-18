@@ -9,14 +9,13 @@ article: Article 20(2)
 obligation_type: governance
 materiality: low
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32020R0852'
 canary_run_id: obj-7a7bbbc923c7
 date: '2026-03-12'
 created: '2026-03-12T03:27:35.658Z'
 ---
-
 # Article 20(2) — Platform on Sustainable Finance: advisory and monitoring functions
 
 ## Obligation
@@ -28,6 +27,6 @@ created: '2026-03-12T03:27:35.658Z'
 
 ## Legal Basis
 
-> The Platform shall: (a) advise the Commission on the technical screening criteria referred to in Article 19, as well as on the possible need to update those criteria; (b) analyse the impact of the technical screening criteria in terms of potential costs and benefits of their application.
+> The Platform shall: (a) advise the Commission on the technical screening criteria referred to in [[Article 19]], as well as on the possible need to update those criteria; (b) analyse the impact of the technical screening criteria in terms of potential costs and benefits of their application.
 
-*Article 20(2), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment (EU Taxonomy Regulation)* [verified]
+*Article 20(2), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment ([[EU Taxonomy Regulation]])* [verified]

@@ -9,15 +9,14 @@ article: Article 10(3) and Article 10(6)
 obligation_type: governance
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32020R0852'
 canary_run_id: obj-6c2fe48a0ee9
 date: '2026-03-12'
 created: '2026-03-12T03:10:36.622Z'
 ---
-
-# Article 10(3) and Article 10(6) — Commission to adopt climate mitigation technical screening criteria by 31 December 2020
+# [[Article 10(3)]] and [[Article 10(6)]] — Commission to adopt climate mitigation technical screening criteria by 31 December 2020
 
 ## Obligation
 
@@ -31,4 +30,4 @@ created: '2026-03-12T03:10:36.622Z'
 
 > The Commission shall adopt the delegated act referred to in paragraph 3 by 31 December 2020, with a view to ensuring its application from 1 January 2022.
 
-*Article 10(3) and Article 10(6), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment (EU Taxonomy Regulation)* [verified]
+*[[Article 10(3)]] and [[Article 10(6)]], Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment ([[EU Taxonomy Regulation]])* [verified]

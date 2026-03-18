@@ -9,14 +9,13 @@ article: Article 13(5)
 obligation_type: disclosure
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-61ba3288222a
 date: '2026-03-12'
 created: '2026-03-12T20:18:23.399Z'
 ---
-
 # Article 13(5) — ESG rating disclosure in marketing communications
 
 ## Obligation
@@ -29,6 +28,6 @@ created: '2026-03-12T20:18:23.399Z'
 
 ## Legal Basis
 
-> Where a financial market participant issues and discloses to third parties an ESG rating, as defined in Article 3, point (1), of Regulation (EU) 2024/3005 of the European Parliament and of the Council, as part of its marketing communications, it shall include on its website the same information as that required by point 1 of Annex III to that Regulation and it shall disclose in those marketing communications a link to those website disclosures.
+> Where a financial market participant issues and discloses to third parties an ESG rating, as defined in [[Article 3]], point (1), of Regulation (EU) 2024/3005 of the European Parliament and of the Council, as part of its marketing communications, it shall include on its website the same information as that required by point 1 of Annex III to that Regulation and it shall disclose in those marketing communications a link to those website disclosures.
 
-*Article 13(5), Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]
+*Article 13(5), Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]]), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]

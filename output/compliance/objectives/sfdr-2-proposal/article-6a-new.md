@@ -8,14 +8,13 @@ article: Article 6a (new)
 obligation_type: prohibition
 materiality: high
 status: active
-extracted: 2026-03-11T00:00:00.000Z
+extracted: '2026-03-11T00:00:00Z'
 citation: unverified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-a13963137889
 date: '2026-03-11'
 created: '2026-03-11T20:52:45.094Z'
 ---
-
 # Article 6a (new) — Restrictions on sustainability claims for non-categorised products
 
 ## Obligation
@@ -29,4 +28,4 @@ created: '2026-03-11T20:52:45.094Z'
 
 > non-categorised products, while not prevented from including information in their pre-contractual and periodic disclosures on whether and how they consider sustainability factors, are required to ensure that such information is not a central element of those disclosures and does not constitute sustainability-related claims reserved for categorised products.
 
-*Article 6a (new), Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR Review 2025)* [unverified]
+*Article 6a (new), Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]] Review 2025)* [unverified]

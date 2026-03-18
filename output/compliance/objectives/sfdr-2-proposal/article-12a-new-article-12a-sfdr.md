@@ -9,15 +9,14 @@ article: Article 12a (new Article 12a SFDR)
 obligation_type: process
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: unverified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-a2241dc05b4b
 date: '2026-03-12'
 created: '2026-03-12T17:36:29.121Z'
 ---
-
-# Article 12a (new Article 12a SFDR) — Data and estimates: documentation and client disclosure obligations
+# Article 12a (new Article 12a [[SFDR]]) — Data and estimates: documentation and client disclosure obligations
 
 ## Obligation
 
@@ -31,4 +30,4 @@ created: '2026-03-12T17:36:29.121Z'
 
 > In complying with Articles 7 to 11, financial market participants: (a) shall ensure that: (i) the use of data provided by external data providers, other than open source or research freely available to the public, is based on formalised and documented arrangements; (ii) the use of estimates that are not based on data provided by external data providers is based on formalised and documented methodologies
 
-*Article 12a (new Article 12a SFDR), Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [unverified]
+*Article 12a (new Article 12a [[SFDR]]), Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]]), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [unverified]

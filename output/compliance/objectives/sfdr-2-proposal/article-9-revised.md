@@ -8,15 +8,14 @@ article: Article 9 (revised)
 obligation_type: disclosure
 materiality: high
 status: active
-extracted: 2026-03-11T00:00:00.000Z
+extracted: '2026-03-11T00:00:00Z'
 citation: unverified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-a13963137889
 date: '2026-03-11'
 created: '2026-03-11T20:52:40.386Z'
 ---
-
-# Article 9 (revised) — Sustainable category: criteria, exclusions and disclosure obligations
+# [[Article 9]] (revised) — Sustainable category: criteria, exclusions and disclosure obligations
 
 ## Obligation
 
@@ -29,4 +28,4 @@ created: '2026-03-11T20:52:40.386Z'
 
 > The sustainable category should consist of financial products that invest in companies, assets or activities that are sustainable or that pursue or positively contribute to environmental and/or social objectives. [...] the exclusions for financial products in this category should extend beyond those for the other two categories and encompass activities where the value chain is associated with fossil fuels, including the expansion of fossil fuels.
 
-*Article 9 (revised), Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR Review 2025)* [unverified]
+*[[Article 9]] (revised), Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]] Review 2025)* [unverified]

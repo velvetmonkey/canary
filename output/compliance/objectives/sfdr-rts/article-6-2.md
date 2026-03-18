@@ -6,14 +6,13 @@ article: Article 6(2)
 obligation_type: disclosure
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R1288'
 canary_run_id: obj-21e544636af0
 date: '2026-03-12'
 created: '2026-03-12T17:32:26.988Z'
 ---
-
 # Article 6(2) — Disclose actions taken and planned to reduce PAI in PAI statement
 
 ## Obligation
@@ -28,4 +27,4 @@ created: '2026-03-12T17:32:26.988Z'
 
 > In the section 'Description of the principal adverse impacts on sustainability factors' in Table 1 of Annex I, financial market participants shall describe the actions taken during the period from 1 January to 31 December of the preceding year and actions planned or targets set for the subsequent period from 1 January to 31 December to avoid or reduce the principal adverse impacts identified.
 
-*Article 6(2), Commission Delegated Regulation (EU) 2022/1288 (SFDR RTS)* [verified]
+*Article 6(2), Commission Delegated Regulation (EU) 2022/1288 ([[SFDR]] RTS)* [verified]

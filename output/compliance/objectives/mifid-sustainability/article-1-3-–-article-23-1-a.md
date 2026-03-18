@@ -8,15 +8,14 @@ article: Article 1(3) – Article 23(1)(a)
 obligation_type: governance
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32021R1253'
 canary_run_id: obj-169ba94d7e3a
 date: '2026-03-12'
 created: '2026-03-12T03:12:04.989Z'
 ---
-
-# Article 1(3) – Article 23(1)(a) — Integrate sustainability risks into risk management policies and procedures
+# [[Article 1(3)]] – [[Article 23(1)(a)]] — Integrate sustainability risks into risk management policies and procedures
 
 ## Obligation
 
@@ -30,4 +29,4 @@ created: '2026-03-12T03:12:04.989Z'
 
 > establish, implement and maintain adequate risk management policies and procedures which identify the risks relating to the firm's activities, processes and systems, and, where appropriate, set the level of risk tolerated by the firm. In doing so, investment firms shall take into account sustainability risks;
 
-*Article 1(3) – Article 23(1)(a), Commission Delegated Regulation (EU) 2021/1253 amending Delegated Regulation (EU) 2017/565 (MiFID II Sustainability Integration)* [verified]
+*[[Article 1(3)]] – [[Article 23(1)(a)]], Commission Delegated Regulation (EU) 2021/1253 amending Delegated Regulation (EU) 2017/565 ([[MiFID II]] Sustainability Integration)* [verified]

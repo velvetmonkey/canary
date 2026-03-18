@@ -9,14 +9,13 @@ article: Article 10(3)
 obligation_type: governance
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32020R0852'
 canary_run_id: obj-78872873b64e
 date: '2026-03-12'
 created: '2026-03-12T20:22:07.778Z'
 ---
-
 # Article 10(3) — Commission to adopt delegated act: technical screening criteria for climate change mitigation
 
 ## Obligation
@@ -29,6 +28,6 @@ created: '2026-03-12T20:22:07.778Z'
 
 ## Legal Basis
 
-> The Commission shall adopt a delegated act in accordance with Article 23 to: (a) supplement paragraphs 1 and 2 of this Article by establishing technical screening criteria for determining the conditions under which a specific economic activity qualifies as contributing substantially to climate change mitigation.
+> The Commission shall adopt a delegated act in accordance with [[Article 23]] to: (a) supplement paragraphs 1 and 2 of this Article by establishing technical screening criteria for determining the conditions under which a specific economic activity qualifies as contributing substantially to climate change mitigation.
 
-*Article 10(3), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment (EU Taxonomy Regulation)* [verified]
+*Article 10(3), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment ([[EU Taxonomy Regulation]])* [verified]

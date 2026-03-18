@@ -9,14 +9,13 @@ article: Article 22
 obligation_type: governance
 materiality: medium
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32020R0852'
 canary_run_id: obj-78872873b64e
 date: '2026-03-12'
 created: '2026-03-12T20:21:49.682Z'
 ---
-
 # Article 22 — Member States: establish effective penalties for Taxonomy disclosure breaches
 
 ## Obligation
@@ -30,4 +29,4 @@ created: '2026-03-12T20:21:49.682Z'
 
 > Member States shall lay down the rules on measures and penalties applicable to infringements of Articles 5, 6 and 7. The measures and penalties provided for shall be effective, proportionate and dissuasive.
 
-*Article 22, Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment (EU Taxonomy Regulation)* [verified]
+*Article 22, Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment ([[EU Taxonomy Regulation]])* [verified]

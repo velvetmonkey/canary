@@ -8,15 +8,14 @@ article: Article 13 (amended)
 obligation_type: prohibition
 materiality: high
 status: active
-extracted: 2026-03-11T00:00:00.000Z
+extracted: '2026-03-11T00:00:00Z'
 citation: unverified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-a13963137889
 date: '2026-03-11'
 created: '2026-03-11T20:52:47.449Z'
 ---
-
-# Article 13 (amended) — Sustainability-related claims in names and marketing restricted to categorised products
+# [[Article 13]] (amended) — Sustainability-related claims in names and marketing restricted to categorised products
 
 ## Obligation
 
@@ -29,4 +28,4 @@ created: '2026-03-11T20:52:47.449Z'
 
 > sustainability-related claims in names and marketing communications would only be allowed for categorised products, with the exception of non-categorised products under Article 9a that would be able to make such claims in marketing communications but not their names.
 
-*Article 13 (amended), Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR Review 2025)* [unverified]
+*[[Article 13]] (amended), Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]] Review 2025)* [unverified]

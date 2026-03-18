@@ -9,14 +9,13 @@ article: Article 8(3)
 obligation_type: reporting
 materiality: medium
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32020R0852'
 canary_run_id: obj-78872873b64e
 date: '2026-03-12'
 created: '2026-03-12T20:21:52.058Z'
 ---
-
 # Article 8(3) — Taxonomy KPI disclosures to be published in separate non-financial report where applicable
 
 ## Obligation
@@ -30,4 +29,4 @@ created: '2026-03-12T20:21:52.058Z'
 
 > If an undertaking publishes non-financial information pursuant to Article 19a or Article 29a of Directive 2013/34/EU in a separate report in accordance with Article 19a(4) or Article 29a(4) of that Directive, the information referred to in paragraphs 1 and 2 of this Article shall be published in that separate report.
 
-*Article 8(3), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment (EU Taxonomy Regulation)* [verified]
+*Article 8(3), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment ([[EU Taxonomy Regulation]])* [verified]

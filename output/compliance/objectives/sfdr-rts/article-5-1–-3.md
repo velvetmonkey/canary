@@ -6,15 +6,14 @@ article: Article 5(1)–(3)
 obligation_type: disclosure
 materiality: medium
 status: active
-extracted: 2026-03-11T00:00:00.000Z
+extracted: '2026-03-11T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R1288'
 canary_run_id: obj-e0fcde367a4c
 date: '2026-03-11'
 created: '2026-03-11T23:52:36.097Z'
 ---
-
-# Article 5(1)–(3) — PAI statement summary section: bilingual requirement
+# [[Article 5(1)]]–(3) — PAI statement summary section: bilingual requirement
 
 ## Obligation
 
@@ -27,4 +26,4 @@ created: '2026-03-11T23:52:36.097Z'
 
 > The summary section in Table 1 of Annex I shall be drafted in all of the following languages: (a) one of the official languages of the home Member State of the financial market participant and, where different, in an additional language customary in the sphere of international finance; (b) where a financial product of the financial market participant is made available in a host Member State, one of the official languages of that host Member State. The summary section shall be of a maximum length of two sides of A4-sized paper when printed.
 
-*Article 5(1)–(3), Commission Delegated Regulation (EU) 2022/1288 (SFDR RTS)* [verified]
+*[[Article 5(1)]]–(3), Commission Delegated Regulation (EU) 2022/1288 ([[SFDR]] RTS)* [verified]

@@ -9,14 +9,13 @@ article: Article 17(1)
 obligation_type: process
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32020R0852'
 canary_run_id: obj-6c2fe48a0ee9
 date: '2026-03-12'
 created: '2026-03-12T03:09:53.520Z'
 ---
-
 # Article 17(1) — Do No Significant Harm (DNSH) assessment across all six objectives
 
 ## Obligation
@@ -28,6 +27,6 @@ created: '2026-03-12T03:09:53.520Z'
 
 ## Legal Basis
 
-> For the purposes of point (b) of Article 3, taking into account the life cycle of the products and services provided by an economic activity, including evidence from existing life-cycle assessments, that economic activity shall be considered to significantly harm: (a) climate change mitigation, where that activity leads to significant greenhouse gas emissions.
+> For the purposes of point (b) of [[Article 3]], taking into account the life cycle of the products and services provided by an economic activity, including evidence from existing life-cycle assessments, that economic activity shall be considered to significantly harm: (a) climate change mitigation, where that activity leads to significant greenhouse gas emissions.
 
-*Article 17(1), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment (EU Taxonomy Regulation)* [verified]
+*Article 17(1), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment ([[EU Taxonomy Regulation]])* [verified]

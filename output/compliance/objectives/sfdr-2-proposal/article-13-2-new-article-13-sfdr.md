@@ -9,15 +9,14 @@ article: Article 13(2) (new Article 13 SFDR)
 obligation_type: prohibition
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-a2241dc05b4b
 date: '2026-03-12'
 created: '2026-03-12T17:35:58.486Z'
 ---
-
-# Article 13(2) (new Article 13 SFDR) — Sustainability-related claims in names and marketing restricted to categorised products
+# [[Article 13(2)]] (new [[Article 13]] [[SFDR]]) — Sustainability-related claims in names and marketing restricted to categorised products
 
 ## Obligation
 
@@ -29,6 +28,6 @@ created: '2026-03-12T17:35:58.486Z'
 
 ## Legal Basis
 
-> Financial market participants may only include sustainability-related claims in the names and in the marketing communications of financial products referred to in Article 7(1), Article 8(1) and Article 9(1).
+> Financial market participants may only include sustainability-related claims in the names and in the marketing communications of financial products referred to in [[Article 7(1)]], [[Article 8(1)]] and [[Article 9(1)]].
 
-*Article 13(2) (new Article 13 SFDR), Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]
+*[[Article 13(2)]] (new [[Article 13]] [[SFDR]]), Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]]), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]

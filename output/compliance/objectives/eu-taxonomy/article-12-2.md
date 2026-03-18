@@ -9,14 +9,13 @@ article: Article 12(2)
 obligation_type: process
 materiality: medium
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32020R0852'
 canary_run_id: obj-02c29148fb6e
 date: '2026-03-12'
 created: '2026-03-12T17:39:58.193Z'
 ---
-
 # Article 12(2) — Commission to adopt delegated act on water and marine resources screening criteria
 
 ## Obligation
@@ -29,6 +28,6 @@ created: '2026-03-12T17:39:58.193Z'
 
 ## Legal Basis
 
-> The Commission shall adopt a delegated act in accordance with Article 23 to: (a) supplement paragraph 1 of this Article by establishing technical screening criteria for determining the conditions under which a specific economic activity qualifies as contributing substantially to sustainable use and protection of water and marine resources;
+> The Commission shall adopt a delegated act in accordance with [[Article 23]] to: (a) supplement paragraph 1 of this Article by establishing technical screening criteria for determining the conditions under which a specific economic activity qualifies as contributing substantially to sustainable use and protection of water and marine resources;
 
-*Article 12(2), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment (EU Taxonomy Regulation)* [verified]
+*Article 12(2), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment ([[EU Taxonomy Regulation]])* [verified]

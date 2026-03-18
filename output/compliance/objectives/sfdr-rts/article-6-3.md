@@ -6,7 +6,7 @@ article: Article 6(3)
 obligation_type: process
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R1288'
 canary_run_id: obj-4217117e32d9
@@ -27,4 +27,4 @@ created: '2026-03-12T20:11:42.498Z'
 
 > Financial market participants shall include in the columns 'Impact' in the section 'Description of the principal adverse impacts on sustainability factors' in Table 1 of Annex I a figure on impact as the average of impacts on 31 March, 30 June, 30 September and 31 December of each period from 1 January to 31 December.
 
-*Article 6(3), Commission Delegated Regulation (EU) 2022/1288 (SFDR RTS)* [verified]
+*Article 6(3), Commission Delegated Regulation (EU) 2022/1288 ([[SFDR]] RTS)* [verified]

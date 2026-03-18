@@ -9,15 +9,14 @@ article: Article 13(5) (new Article 13 SFDR)
 obligation_type: disclosure
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-a2241dc05b4b
 date: '2026-03-12'
 created: '2026-03-12T17:36:34.022Z'
 ---
-
-# Article 13(5) (new Article 13 SFDR) — ESG rating disclosure in marketing communications and on websites
+# [[Article 13(5)]] (new [[Article 13]] [[SFDR]]) — ESG rating disclosure in marketing communications and on websites
 
 ## Obligation
 
@@ -29,6 +28,6 @@ created: '2026-03-12T17:36:34.022Z'
 
 ## Legal Basis
 
-> Where a financial market participant issues and discloses to third parties an ESG rating, as defined in Article 3, point (1), of Regulation (EU) 2024/3005 of the European Parliament and of the Council, as part of its marketing communications, it shall include on its website the same information as that required by point 1 of Annex III to that Regulation and it shall disclose in those marketing communications a link to those website disclosures.
+> Where a financial market participant issues and discloses to third parties an ESG rating, as defined in [[Article 3]], point (1), of Regulation (EU) 2024/3005 of the European Parliament and of the Council, as part of its marketing communications, it shall include on its website the same information as that required by point 1 of Annex III to that Regulation and it shall disclose in those marketing communications a link to those website disclosures.
 
-*Article 13(5) (new Article 13 SFDR), Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]
+*[[Article 13(5)]] (new [[Article 13]] [[SFDR]]), Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]]), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]

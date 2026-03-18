@@ -6,15 +6,14 @@ article: Article 8(1)–(2)
 obligation_type: disclosure
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R1288'
 canary_run_id: obj-21e544636af0
 date: '2026-03-12'
 created: '2026-03-12T17:32:30.628Z'
 ---
-
-# Article 8(1)–(2) — Engagement policies in PAI statement
+# [[Article 8(1)]]–(2) — Engagement policies in PAI statement
 
 ## Obligation
 
@@ -27,4 +26,4 @@ created: '2026-03-12T17:32:30.628Z'
 
 > In the section 'Engagement policies' in Table 1 of Annex I, financial market participants shall provide all of the following information: (a) where applicable, brief summaries of the engagement policies referred to in Article 3g of Directive 2007/36/EC of the European Parliament and of the Council ; (b) brief summaries of any other engagement policies to reduce principal adverse impacts.
 
-*Article 8(1)–(2), Commission Delegated Regulation (EU) 2022/1288 (SFDR RTS)* [verified]
+*[[Article 8(1)]]–(2), Commission Delegated Regulation (EU) 2022/1288 ([[SFDR]] RTS)* [verified]

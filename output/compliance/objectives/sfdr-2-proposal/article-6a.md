@@ -9,14 +9,13 @@ article: Article 6a
 obligation_type: prohibition
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-3ed5781a0f53
 date: '2026-03-12'
 created: '2026-03-12T03:41:42.385Z'
 ---
-
 # Article 6a — Restrictions on voluntary sustainability disclosures for non-categorised products
 
 ## Obligation
@@ -30,4 +29,4 @@ created: '2026-03-12T03:41:42.385Z'
 
 > Financial market participants shall not be prevented from including in the pre-contractual documentation of financial products, other than those categorised as sustainability-related financial products pursuant to Articles 7, 8 or 9, information on whether and how those financial products consider sustainability factors, provided that such information:
 
-*Article 6a, Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]
+*Article 6a, Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]]), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]

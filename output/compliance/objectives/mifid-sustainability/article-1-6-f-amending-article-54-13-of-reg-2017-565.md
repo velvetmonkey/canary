@@ -8,15 +8,14 @@ article: Article 1(6)(f) — amending Article 54(13) of Reg. 2017/565
 obligation_type: process
 materiality: medium
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32021R1253'
 canary_run_id: obj-d6279f598295
 date: '2026-03-12'
 created: '2026-03-12T17:24:18.578Z'
 ---
-
-# Article 1(6)(f) — amending Article 54(13) of Reg. 2017/565 — Sustainability preferences do not override core suitability conditions
+# [[Article 1(6)(f)]] — amending [[Article 54(13)]] of Reg. 2017/565 — Sustainability preferences do not override core suitability conditions
 
 ## Obligation
 
@@ -30,4 +29,4 @@ created: '2026-03-12T17:24:18.578Z'
 
 > The requirements to meet the sustainability preferences of clients or potential clients, where relevant, shall not alter the conditions laid down in the first subparagraph.
 
-*Article 1(6)(f) — amending Article 54(13) of Reg. 2017/565, Commission Delegated Regulation (EU) 2021/1253 amending Delegated Regulation (EU) 2017/565 (MiFID II Sustainability Integration)* [verified]
+*[[Article 1(6)(f)]] — amending [[Article 54(13)]] of Reg. 2017/565, Commission Delegated Regulation (EU) 2021/1253 amending Delegated Regulation (EU) 2017/565 ([[MiFID II]] Sustainability Integration)* [verified]

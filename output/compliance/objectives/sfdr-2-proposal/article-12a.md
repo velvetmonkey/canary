@@ -9,14 +9,13 @@ article: Article 12a
 obligation_type: process
 materiality: medium
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-61ba3288222a
 date: '2026-03-12'
 created: '2026-03-12T20:18:21.020Z'
 ---
-
 # Article 12a — Data and estimates: documentation and client disclosure obligations
 
 ## Obligation
@@ -32,4 +31,4 @@ created: '2026-03-12T20:18:21.020Z'
 (a)shall ensure that:
 (i)the use of data provided by external data providers, other than open source or research freely available to the public, is based on formalised and documented arrangements;
 
-*Article 12a, Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]
+*Article 12a, Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]]), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]

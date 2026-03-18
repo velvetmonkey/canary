@@ -9,14 +9,13 @@ article: Article 19a
 obligation_type: process
 materiality: medium
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-61ba3288222a
 date: '2026-03-12'
 created: '2026-03-12T20:18:55.838Z'
 ---
-
 # Article 19a — Delayed application for IBIPs, pension products and PEPPs
 
 ## Obligation
@@ -29,6 +28,6 @@ created: '2026-03-12T20:18:55.838Z'
 
 ## Legal Basis
 
-> Financial market participants shall apply Articles 7, 8, 9, 10 and 11 of this Regulation as amended by Regulation [PP: please insert reference to this amending regulation] to financial products referred to in Article 2(12), points (c), (d), (e), (g) and (h) by [12 months after the date of application of this Regulation].
+> Financial market participants shall apply Articles 7, 8, 9, 10 and 11 of this Regulation as amended by Regulation [PP: please insert reference to this amending regulation] to financial products referred to in [[Article 2(12)]], points (c), (d), (e), (g) and (h) by [12 months after the date of application of this Regulation].
 
-*Article 19a, Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]
+*Article 19a, Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]]), Regulation (EU) No 1286/2014 (PRIIPs) and repealing Commission Delegated Regulation (EU) 2022/1288* [verified]

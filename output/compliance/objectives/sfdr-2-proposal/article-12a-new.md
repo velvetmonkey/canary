@@ -8,14 +8,13 @@ article: Article 12a (new)
 obligation_type: process
 materiality: medium
 status: active
-extracted: 2026-03-11T00:00:00.000Z
+extracted: '2026-03-11T00:00:00Z'
 citation: unverified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:52025PC0841'
 canary_run_id: obj-a13963137889
 date: '2026-03-11'
 created: '2026-03-11T20:53:06.594Z'
 ---
-
 # Article 12a (new) — Data use principles and investor information on data sources
 
 ## Obligation
@@ -29,4 +28,4 @@ created: '2026-03-11T20:53:06.594Z'
 
 > Addition of a new Article 12a setting out principles for financial market participants on the use of data and estimates for the purposes of this Regulation as well as rules on the information to be provided to investors upon request on relevant data sources and assumptions underpinning estimates.
 
-*Article 12a (new), Proposal for a Regulation amending Regulation (EU) 2019/2088 (SFDR Review 2025)* [unverified]
+*Article 12a (new), Proposal for a Regulation amending Regulation (EU) 2019/2088 ([[SFDR]] Review 2025)* [unverified]

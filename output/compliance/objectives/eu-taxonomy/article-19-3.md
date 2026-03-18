@@ -9,14 +9,13 @@ article: Article 19(3)
 obligation_type: prohibition
 materiality: high
 status: active
-extracted: 2026-03-12T00:00:00.000Z
+extracted: '2026-03-12T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32020R0852'
 canary_run_id: obj-78872873b64e
 date: '2026-03-12'
 created: '2026-03-12T20:21:42.561Z'
 ---
-
 # Article 19(3) — Prohibition: solid fossil fuel power generation cannot be Taxonomy-aligned
 
 ## Obligation
@@ -30,4 +29,4 @@ created: '2026-03-12T20:21:42.561Z'
 
 > The technical screening criteria referred to in paragraph 1 shall ensure that power generation activities that use solid fossil fuels do not qualify as environmentally sustainable economic activities.
 
-*Article 19(3), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment (EU Taxonomy Regulation)* [verified]
+*Article 19(3), Regulation (EU) 2020/852 of the European Parliament and of the Council on the establishment of a framework to facilitate sustainable investment ([[EU Taxonomy Regulation]])* [verified]

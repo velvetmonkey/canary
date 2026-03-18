@@ -6,15 +6,14 @@ article: Article 8(1)–(2)
 obligation_type: governance
 materiality: medium
 status: active
-extracted: 2026-03-11T00:00:00.000Z
+extracted: '2026-03-11T00:00:00Z'
 citation: verified
 source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R1288'
 canary_run_id: obj-e0fcde367a4c
 date: '2026-03-11'
 created: '2026-03-11T23:52:40.904Z'
 ---
-
-# Article 8(1)–(2) — PAI statement engagement policies section
+# [[Article 8(1)]]–(2) — PAI statement engagement policies section
 
 ## Obligation
 
@@ -32,4 +31,4 @@ where applicable, brief summaries of the engagement policies referred to in Arti
 (b)
 brief summaries of any other engagement policies to reduce principal adverse impacts.
 
-*Article 8(1)–(2), Commission Delegated Regulation (EU) 2022/1288 (SFDR RTS)* [verified]
+*[[Article 8(1)]]–(2), Commission Delegated Regulation (EU) 2022/1288 ([[SFDR]] RTS)* [verified]
