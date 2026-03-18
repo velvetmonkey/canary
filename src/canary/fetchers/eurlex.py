@@ -80,6 +80,12 @@ class EurLexFetcher(BaseFetcher):
             logger.info("ETag match for %s — no change", celex_id)
             return None, False
 
+        if resp.status_code == 202:
+            # EUR-Lex returns 202 when the document is being compiled — retry after delay
+            logger.info("EUR-Lex 202 (document compiling) for %s — will retry", celex_id)
+            await asyncio.sleep(5)
+            raise httpx.TimeoutException(f"202 document compiling: {celex_id}")
+
         if resp.status_code == 429:
             retry_after = int(resp.headers.get("Retry-After", "60"))
             logger.warning("Rate limited on %s, waiting %ds", celex_id, retry_after)

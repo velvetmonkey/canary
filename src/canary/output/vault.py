@@ -52,10 +52,12 @@ class VaultWriter:
         mcp_server_path: str | None = None,
         vault_path: str | None = None,
     ) -> None:
-        self._server_path = mcp_server_path or os.environ.get(
-            "CANARY_MCP_SERVER", DEFAULT_MCP_SERVER
+        self._server_path = os.path.expanduser(
+            mcp_server_path or os.environ.get("CANARY_MCP_SERVER", DEFAULT_MCP_SERVER)
         )
-        self._vault_path = vault_path or os.environ.get("FLYWHEEL_VAULT", DEFAULT_VAULT_PATH)
+        self._vault_path = os.path.expanduser(
+            vault_path or os.environ.get("FLYWHEEL_VAULT", DEFAULT_VAULT_PATH)
+        )
         self._output_root = os.environ.get("CANARY_OUTPUT_ROOT", DEFAULT_OUTPUT_ROOT)
         self._daily_root = os.environ.get("CANARY_DAILY_ROOT", DEFAULT_DAILY_ROOT)
         self._client: MultiServerMCPClient | None = None
