@@ -1,10 +1,14 @@
-"""Tests for EUR-Lex fetcher."""
+"""Tests for fetcher extract_text methods."""
 
 from pathlib import Path
 
 import pytest
 
 from canary.fetchers.eurlex import EurLexFetcher
+from canary.fetchers.govinfo import GovInfoFetcher
+from canary.fetchers.irishstatute import IrishStatuteFetcher
+from canary.fetchers.nzleg import NZLegislationFetcher
+from canary.fetchers.ukleg import UKLegislationFetcher
 
 FIXTURE_PATH = Path(__file__).parent.parent / "fixtures" / "sfdr_l1.html"
 
@@ -56,6 +60,90 @@ class TestExtractText:
     def test_empty_html(self):
         text = EurLexFetcher.extract_text("<html><body></body></html>")
         assert text == "" or text.strip() == ""
+
+
+class TestUKLegExtractText:
+    def test_extracts_from_leg_snippet(self):
+        html = """
+        <html><body>
+            <nav>Navigation</nav>
+            <div id="viewLegSnippet">
+                <p>An Act to make provision about financial services.</p>
+                <p>Section 1: Definitions</p>
+            </div>
+            <footer>Footer</footer>
+        </body></html>
+        """
+        text = UKLegislationFetcher.extract_text(html)
+        assert "financial services" in text
+        assert "Section 1" in text
+        assert "Navigation" not in text
+
+    def test_empty_html(self):
+        text = UKLegislationFetcher.extract_text("<html><body></body></html>")
+        assert text.strip() == ""
+
+
+class TestGovInfoExtractText:
+    def test_extracts_from_pre_block(self):
+        html = """
+        <html><body>
+            <h1>Public Law 107-204</h1>
+            <pre>
+                SARBANES-OXLEY ACT OF 2002
+                SEC. 302. CORPORATE RESPONSIBILITY FOR FINANCIAL REPORTS.
+            </pre>
+        </body></html>
+        """
+        text = GovInfoFetcher.extract_text(html)
+        assert "SARBANES-OXLEY" in text
+        assert "SEC. 302" in text
+
+    def test_empty_html(self):
+        text = GovInfoFetcher.extract_text("<html><body></body></html>")
+        assert text.strip() == ""
+
+
+class TestNZLegExtractText:
+    def test_extracts_from_viewcontent(self):
+        html = """
+        <html><body>
+            <nav>Menu</nav>
+            <div id="viewcontent">
+                <p>Financial Markets Conduct Act 2013</p>
+                <p>Part 1: Preliminary provisions</p>
+            </div>
+        </body></html>
+        """
+        text = NZLegislationFetcher.extract_text(html)
+        assert "Financial Markets Conduct" in text
+        assert "Part 1" in text
+        assert "Menu" not in text
+
+    def test_empty_html(self):
+        text = NZLegislationFetcher.extract_text("<html><body></body></html>")
+        assert text.strip() == ""
+
+
+class TestIrishStatuteExtractText:
+    def test_extracts_from_act_content(self):
+        html = """
+        <html><body>
+            <nav>Navigation</nav>
+            <div class="act-content">
+                <p>Investment Limited Partnerships (Amendment) Act 2020</p>
+                <p>Section 3: Amendment of Act of 1994</p>
+            </div>
+        </body></html>
+        """
+        text = IrishStatuteFetcher.extract_text(html)
+        assert "Investment Limited Partnerships" in text
+        assert "Section 3" in text
+        assert "Navigation" not in text
+
+    def test_empty_html(self):
+        text = IrishStatuteFetcher.extract_text("<html><body></body></html>")
+        assert text.strip() == ""
 
 
 @pytest.mark.integration

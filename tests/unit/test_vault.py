@@ -2,6 +2,8 @@
 
 from unittest.mock import AsyncMock
 
+import pytest
+
 from canary.output.vault import VaultWriter
 
 
@@ -185,3 +187,36 @@ class TestVaultWriter:
 
         result = await writer.write_readme("# README", "some/path.md")
         assert result is None
+
+    async def test_search_by_type_returns_list(self):
+        writer = VaultWriter()
+        mock_search = AsyncMock()
+        mock_search.ainvoke = AsyncMock(return_value={
+            "notes": [
+                {"path": "a.md", "frontmatter": {"type": "regulation-index"}},
+                {"path": "b.md", "frontmatter": {"type": "regulation-index"}},
+            ]
+        })
+        writer._tools = {"search": mock_search}
+
+        results = await writer.search_by_type("regulation-index")
+        assert len(results) == 2
+        assert results[0]["path"] == "a.md"
+
+    async def test_search_by_type_handles_json_string(self):
+        writer = VaultWriter()
+        mock_search = AsyncMock()
+        mock_search.ainvoke = AsyncMock(return_value='[{"path": "c.md"}]')
+        writer._tools = {"search": mock_search}
+
+        results = await writer.search_by_type("regulation-index")
+        assert len(results) == 1
+
+    async def test_search_by_type_handles_error(self):
+        writer = VaultWriter()
+        mock_search = AsyncMock()
+        mock_search.ainvoke = AsyncMock(side_effect=Exception("search failed"))
+        writer._tools = {"search": mock_search}
+
+        with pytest.raises(Exception):
+            await writer.search_by_type("regulation-index")

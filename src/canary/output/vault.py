@@ -6,6 +6,7 @@ via stdio transport and invoke vault tools directly.
 
 import logging
 import os
+import re
 from datetime import date
 from typing import Any
 
@@ -100,6 +101,24 @@ class VaultWriter:
             raise RuntimeError(f"Tool '{name}' not found. Available: {available}")
         return await tool.ainvoke(args)
 
+    async def search_by_type(self, type_name: str, limit: int = 50) -> list[dict]:
+        """Search vault for notes matching a given type."""
+        result = await self._call_tool(
+            "search",
+            {"query": type_name, "where": {"type": type_name}, "limit": limit},
+        )
+        if isinstance(result, str):
+            import json as _json
+            try:
+                result = _json.loads(result)
+            except (ValueError, TypeError):
+                return []
+        if isinstance(result, dict):
+            return result.get("notes", result.get("results", []))
+        if isinstance(result, list):
+            return result
+        return []
+
     async def check_duplicate(self, run_id: str) -> bool:
         """Check if a report with this run_id already exists in the vault."""
         try:
@@ -164,7 +183,6 @@ class VaultWriter:
         Returns the path of the created note, or None on error.
         """
         # Sanitize article ref for filename: "Article 4(1)(a)" → "article-4-1-a"
-        import re
         safe_name = article_ref.lower()
         safe_name = re.sub(r"[^a-z0-9]+", "-", safe_name)
         safe_name = safe_name.strip("-")

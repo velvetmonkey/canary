@@ -277,31 +277,13 @@ async def _build_objectives_index(
 ) -> str | None:
     """Build a root objectives index by reading regulation READMEs from the vault."""
     try:
-        results = await vault_writer._call_tool(
-            "search",
-            {"query": "regulation-index", "where": {"type": "regulation-index"}, "limit": 50},
-        )
+        items = await vault_writer.search_by_type("regulation-index")
     except Exception as e:
         logger.warning("Failed to search for regulation indexes: %s", e)
         return None
 
     # Parse search results into RegulationSummary list
     summaries: list[RegulationSummary] = []
-
-    # MCP tools via langchain may return dict, list, or JSON string
-    if isinstance(results, str):
-        import json as _json
-        try:
-            results = _json.loads(results)
-        except (ValueError, TypeError):
-            logger.warning("Could not parse search results: %s", results[:200])
-            return None
-
-    items = []
-    if isinstance(results, dict):
-        items = results.get("notes", results.get("results", []))
-    elif isinstance(results, list):
-        items = results
 
     for item in items:
         fm = {}
