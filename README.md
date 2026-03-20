@@ -122,38 +122,36 @@ CANARY is designed around verifiability, not trust in AI output:
 - **Full audit trail.** Every run is recorded in SQLite (`run_log`, `source_check_log`) with timestamps, token counts, citation stats, and error details. Issue files are written to `data/issues/`.
 - **Idempotent vault writes.** Before writing, CANARY searches the vault for the `canary_run_id`. If found, the write is skipped. The same run never writes twice.
 - **Structured exit codes.** `0` = clean run, `1` = warnings (e.g. unverified citations), `2` = errors (e.g. fetch failure). CI-friendly.
+- **Autonomous publication.** Reports are written to the vault automatically when a change is detected. The pipeline does not wait for human approval — it publishes with `status: unreviewed` so that compliance teams can triage asynchronously. Use `--no-vault` for dry runs.
 
 ### The Wider Lifecycle
 
-CANARY fits into a compliance workflow like this:
+CANARY fits into a compliance workflow with two parallel tracks: an automated pipeline that runs unattended, and a human workflow that triages its output asynchronously.
 
 ```
-First run            Stores baseline hash + full text for each source.
-                     No extraction — there's nothing to diff against yet.
-                              │
-Scheduled monitoring          ▼
-                     Runs periodically. Fetches each source, compares hashes.
-                     If unchanged → logs "no change" and moves on.
-                              │
-Change detected               ▼
-                     Generates diff, extracts structured changes via Claude,
-                     verifies all citations, writes triage report to vault.
-                              │
-Compliance triage             ▼
-                     A human reviews the report: severity, affected articles,
-                     supporting quotes. Decides on action.
-                              │
-Objective extraction          ▼
-                     `extract-objectives` pulls structured obligations from the
-                     full regulation text: who must comply, what they must do,
-                     legal basis, deadlines. Each objective becomes a vault note.
-                              │
-Obligation tracking           ▼
-                     Objectives live in the vault as structured notes with
-                     frontmatter (article, obligation_type, materiality, status).
-                     Obsidian queries, dashboards, or downstream tools can
-                     track compliance posture over time.
+Automated pipeline              Human workflow
+──────────────────              ──────────────
+First run
+  Stores baseline hash + text.
+  No extraction needed.
+
+Scheduled runs
+  Fetch → hash → diff.
+  If changed:
+    Extract → verify → report
+    Write to vault automatically
+                ─────────────→  Triage: review severity,
+                                affected articles, quotes.
+                                Decide on action.
+
+On-demand: extract-objectives
+  Full-text → obligations
+  Write to vault automatically
+                ─────────────→  Track obligations.
+                                Monitor compliance posture.
 ```
+
+The arrow between tracks shows a handoff, not a gate — the pipeline publishes autonomously with `status: unreviewed`, and human triage happens downstream.
 
 ---
 
@@ -758,7 +756,7 @@ uv run ruff check src/ tests/                    # Lint
 
 ### Technology Stack
 
-Most RegTech tools are black boxes — opaque SaaS platforms where you trust the vendor's AI output and hope for the best. CANARY takes the opposite approach: every technology choice is made to maximise verifiability, auditability, and transparency. The stack is designed so that AI accelerates the work but never has the final word.
+Most RegTech tools are black boxes — opaque SaaS platforms where you trust the vendor's AI output and hope for the best. CANARY takes the opposite approach: every technology choice is made to maximise verifiability, auditability, and transparency. The stack is designed so that AI output is mechanically verified where possible and always published with full provenance for human triage — not silently trusted.
 
 #### Pipeline Orchestration — LangGraph
 
@@ -784,7 +782,7 @@ This is the layer that makes CANARY trustworthy in a way that most AI tools are 
 
 The verification pipeline applies 5 strategies with full Unicode normalization (NFKC, smart quote folding, dash normalisation, invisible character stripping, footnote marker removal). This handles the reality of legal text: EUR-Lex uses different quote characters across consolidations, PDF-to-HTML conversion introduces ligatures and non-breaking spaces, and footnote markers appear inline. A naive substring check would fail on clean, correct quotes.
 
-When verification fails, the re-quote pipeline automatically asks Claude to find the exact passage again — and re-verifies the corrected quote. Unverified citations are never silently accepted; they're flagged in the output for human review.
+When verification fails, the re-quote pipeline automatically asks Claude to find the exact passage again — and re-verifies the corrected quote. Unverified citations are never silently accepted; they're flagged in the output for human review. The report publishes regardless — flagging is informational, not a gate.
 
 The outcome: when a compliance report says *"Article 8(1) requires..."* with a supporting quote, that quote is **provably present** in the source document. An auditor can verify it mechanically.
 

@@ -48,7 +48,7 @@ A README in each regulation folder that acts as a table of contents with verific
 **How to verify manually:**
 1. Open a regulation README (e.g., [`uk-fsa-2023/README.md`](compliance/objectives/uk-fsa-2023/README.md))
 2. Check the verified/total count at the top
-3. Scan the obligations table — any row marked **UNVERIFIED** requires manual review
+3. Scan the obligations table — any row marked **UNVERIFIED** should receive manual review
 4. Click into an individual objective to spot-check the citation
 
 **Example:** [`compliance/objectives/uk-fsa-2023/README.md`](compliance/objectives/uk-fsa-2023/README.md)
@@ -90,7 +90,7 @@ Every output file starts with YAML frontmatter. Here are the key fields:
 Every citation is checked with a deterministic substring match against the published regulation text, with Unicode normalization and whitespace collapsing. This is not a confidence score or an AI judgment — it is a mechanical pass/fail check.
 
 - **`[verified]`** = the exact quote was found in the source text. You can confirm this yourself by opening the `source_url` and searching for the quoted text.
-- **`[unverified]`** = the quote was not found verbatim. This requires human review — it may be a paraphrase, a truncation, or from a different consolidation of the regulation.
+- **`[unverified]`** = the quote was not found verbatim. This warrants human review — it may be a paraphrase, a truncation, or from a different consolidation of the regulation.
 
 **Current rate:** 397/453 (88%) verified. See the [main README](../README.md#guarantees-and-trust-model) for the full technical explanation.
 

@@ -125,7 +125,7 @@ class TestGenerateChangeReport:
             run_id="run-test",
         )
         assert "[UNVERIFIED]" in report
-        assert "Unverified citations require manual review" in report
+        assert "Unverified citations should receive manual review" in report
 
     def test_no_extraction_fallback(self):
         report = generate_change_report(

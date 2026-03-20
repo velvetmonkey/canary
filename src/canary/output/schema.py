@@ -184,7 +184,7 @@ def generate_change_report(
         lines.append(f"**{verified}/{total}** citations mechanically verified.")
         if not verification.all_verified:
             lines.append("")
-            lines.append("Unverified citations require manual review.")
+            lines.append("Unverified citations should receive manual review.")
         lines.append("")
 
     return "\n".join(lines)
