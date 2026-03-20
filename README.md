@@ -1,5 +1,7 @@
 # CANARY
 
+[![CI](https://github.com/velvetmonkey/canary/actions/workflows/ci.yml/badge.svg)](https://github.com/velvetmonkey/canary/actions/workflows/ci.yml)
+
 **C**ompliance **AN**alysis and **A**utomated **R**egulatory **Y**ield
 
 Continuous monitoring of financial regulation across 5 jurisdictions — fetch changes, extract obligations, verify every citation, deliver audit-ready reports with cross-linked knowledge graph.
