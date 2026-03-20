@@ -79,6 +79,34 @@ def _apply_wikilinks(text: str, self_article: str | None = None) -> str:
     return text
 
 
+_SOURCE_URL_TEMPLATES: dict[str, str] = {
+    "eurlex": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:{doc_id}",
+    "ukleg": "https://www.legislation.gov.uk/{doc_id}/enacted",
+    "govinfo": "https://www.govinfo.gov/content/pkg/{doc_id}/html/{doc_id}.htm",
+    "nzleg": "https://www.legislation.govt.nz/{doc_id}/latest/whole.html",
+    "irishstatute": "https://www.irishstatutebook.ie/eli/{doc_id}/enacted/en/html",
+}
+
+_SOURCE_LINK_LABELS: dict[str, str] = {
+    "eurlex": "EUR-Lex",
+    "ukleg": "legislation.gov.uk",
+    "govinfo": "GovInfo",
+    "nzleg": "legislation.govt.nz",
+    "irishstatute": "irishstatutebook.ie",
+}
+
+
+def _source_url(fetcher: str, doc_id: str) -> str:
+    """Return the canonical source URL for a document."""
+    template = _SOURCE_URL_TEMPLATES.get(fetcher, _SOURCE_URL_TEMPLATES["eurlex"])
+    return template.format(doc_id=doc_id)
+
+
+def _source_link_label(fetcher: str) -> str:
+    """Return the display label for a source link."""
+    return _SOURCE_LINK_LABELS.get(fetcher, "Source")
+
+
 def _yaml_quote(value: str) -> str:
     """Quote a YAML value if it contains special characters."""
     if any(ch in value for ch in (":", "#", "[", "]", "{", "}", '"', "'", "&", "*", "?", "|", ">", "!", "%", "@", "`")):
@@ -120,7 +148,7 @@ def generate_change_report(
         f"severity: {severity}",
         "status: unreviewed",
         f"detected: {today}",
-        f"source_url: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:{source['celex_id']}",
+        f"source_url: {_source_url(source.get('fetcher', 'eurlex'), source['celex_id'])}",
         "affects:",
     ]
     for a in affects:
@@ -197,6 +225,7 @@ def generate_objective_note(
     celex_id: str,
     run_id: str,
     source_text: str | None = None,
+    fetcher: str = "eurlex",
 ) -> str:
     """Generate a vault note for a single compliance objective."""
     today = date.today().isoformat()
@@ -225,7 +254,7 @@ def generate_objective_note(
         "status: active",
         f"extracted: {today}",
         f"citation: {citation_status}",
-        f"source_url: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:{celex_id}",
+        f"source_url: {_source_url(fetcher, celex_id)}",
         f"canary_run_id: {run_id}",
         "---",
         "",
@@ -261,6 +290,7 @@ def generate_regulation_readme(
     objectives: list[ComplianceObjective],
     verified_articles: set[str],
     run_id: str,
+    fetcher: str = "eurlex",
 ) -> str:
     """Generate a README index note for a regulation's objectives folder."""
     today = date.today().isoformat()
@@ -281,7 +311,7 @@ def generate_regulation_readme(
         f"# {regulation_name}",
         "",
         f"**{verified}/{total}** citations verified | "
-        f"[EUR-Lex](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:{celex_id})",
+        f"[{_source_link_label(fetcher)}]({_source_url(fetcher, celex_id)})",
         "",
         "## Obligations",
         "",

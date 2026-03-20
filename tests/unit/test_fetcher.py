@@ -99,6 +99,21 @@ class TestGovInfoExtractText:
         assert "SARBANES-OXLEY" in text
         assert "SEC. 302" in text
 
+    def test_strips_page_markers(self):
+        """[[Page NNN STAT. NNN]] markers should be stripped to prevent citation breakage."""
+        html = """
+        <html><body><pre>
+            No company with a class of securities
+            [[Page 116 STAT. 803]]
+            or any officer may discharge
+        </pre></body></html>
+        """
+        text = GovInfoFetcher.extract_text(html)
+        assert "[[Page" not in text
+        assert "STAT." not in text
+        assert "securities" in text
+        assert "officer" in text
+
     def test_empty_html(self):
         text = GovInfoFetcher.extract_text("<html><body></body></html>")
         assert text.strip() == ""

@@ -113,6 +113,20 @@ class TestGenerateChangeReport:
         )
         assert "CELEX:32019R2088" in report
 
+    def test_source_url_uses_fetcher(self):
+        """Non-EUR-Lex sources should get their own source URL."""
+        source = {"id": "US-SOX", "celex_id": "PLAW-107publ204", "label": "SOX", "fetcher": "govinfo", "priority": "high"}
+        report = generate_change_report(
+            source=source,
+            extraction=_make_extraction(),
+            verification=_make_verification(),
+            tags={"regulation": "SOX", "jurisdiction": "US"},
+            run_id="run-test",
+        )
+        assert "govinfo.gov" in report
+        assert "PLAW-107publ204" in report
+        assert "eur-lex" not in report
+
     def test_verified_citations_labelled(self):
         report = generate_change_report(
             source=_make_source(),
@@ -257,6 +271,29 @@ class TestYamlFrontmatterEscaping:
         )
         assert 'regulation: "Regulation (EU) 2019/2088: SFDR"' in note
 
+    def test_objective_note_source_url_uses_fetcher(self):
+        obj = ComplianceObjective(
+            article="Section 302",
+            title="CEO/CFO Certification",
+            obligation_type="disclosure",
+            who="principal executive officers",
+            what="certify financial reports",
+            where="in annual/quarterly reports",
+            deadline=None,
+            materiality="high",
+            verbatim_quote="the principal executive officer",
+        )
+        note = generate_objective_note(
+            objective=obj,
+            regulation_name="SOX",
+            celex_id="PLAW-107publ204",
+            run_id="run-test",
+            fetcher="govinfo",
+        )
+        assert "govinfo.gov" in note
+        assert "PLAW-107publ204" in note
+        assert "eur-lex" not in note
+
 
 def _make_objective(article="Article 3(1)", title="Test obligation", obligation_type="disclosure", materiality="high"):
     return ComplianceObjective(
@@ -330,6 +367,17 @@ class TestGenerateRegulationReadme:
     def test_eurlex_link(self):
         readme = generate_regulation_readme("SFDR", "32019R2088", [], set(), "run-001")
         assert "CELEX:32019R2088" in readme
+
+    def test_source_link_uses_fetcher(self):
+        readme = generate_regulation_readme("SOX", "PLAW-107publ204", [], set(), "run-001", fetcher="govinfo")
+        assert "[GovInfo]" in readme
+        assert "govinfo.gov" in readme
+        assert "EUR-Lex" not in readme
+
+    def test_ukleg_source_link(self):
+        readme = generate_regulation_readme("UK Env Act", "ukpga/2021/30", [], set(), "run-001", fetcher="ukleg")
+        assert "[legislation.gov.uk]" in readme
+        assert "legislation.gov.uk/ukpga/2021/30" in readme
 
     def test_empty_objectives(self):
         readme = generate_regulation_readme("SFDR", "32019R2088", [], set(), "run-001")

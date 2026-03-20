@@ -126,6 +126,12 @@ class TestCitationMatches:
         quote = "EEE FFF GGG HHH III JJJ KKK [...] AAA BBB CCC DDD"
         assert not citation_matches(quote, source)
 
+    def test_elision_bare_dots(self):
+        """Bare ... (no brackets) should also trigger elision matching."""
+        source = "financial market participants shall integrate sustainability risks in their investment decisions and disclose those risks to end investors in a clear manner"
+        quote = "financial market participants shall integrate sustainability risks... and disclose those risks to end investors in a clear manner"
+        assert citation_matches(quote, source)
+
     def test_elision_segment_too_short_rejected(self):
         source = "financial market participants shall integrate sustainability risks in investment decisions"
         # One segment under 40 chars — elision match should not kick in

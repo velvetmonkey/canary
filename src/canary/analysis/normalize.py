@@ -23,8 +23,9 @@ _INVISIBLE_RE = re.compile(r"[\u00AD\u200B\u200C\u200D\uFEFF\u2060]")
 # Inline footnote markers: *1, *8, *14 etc. (EUR-Lex proposal documents)
 _FOOTNOTE_MARKER_RE = re.compile(r"\*\d{1,3}")
 
-# Editorial elision marks: [...] or [… ] — used by Claude to skip text mid-quote
-_ELISION_RE = re.compile(r"\s*\[\.{3}\]\s*|\s*\[\u2026\]\s*")
+# Editorial elision marks — used by Claude to skip text mid-quote:
+# [...] or […] (bracketed) and bare ... or … (unbracketed)
+_ELISION_RE = re.compile(r"\s*\[\.{3}\]\s*|\s*\[\u2026\]\s*|\s*\.{3}\s*|\s*\u2026\s*")
 
 
 def normalize_for_matching(text: str) -> str:

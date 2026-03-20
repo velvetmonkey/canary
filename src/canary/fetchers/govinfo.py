@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import re
 import time
 import warnings
 
@@ -25,6 +26,10 @@ logger = logging.getLogger(__name__)
 BASE_URL = "https://www.govinfo.gov/content/pkg/{doc_id}/html/{doc_id}.htm"
 RATE_LIMIT_DELAY = 1.0
 USER_AGENT = "CANARY/1.0 regulatory-monitor (github.com/velvetmonkey/canary)"
+
+# GovInfo injects page break markers like [[Page 116 STAT. 803]] into the text.
+# These break citation substring matching when a quote spans a page boundary.
+_PAGE_MARKER_RE = re.compile(r"\[\[Page \d+ STAT\. \d+\]\]")
 
 
 class GovInfoFetcher(BaseFetcher):
@@ -91,13 +96,16 @@ class GovInfoFetcher(BaseFetcher):
         """Extract clean text from GovInfo HTML.
 
         GovInfo public law pages use <pre> blocks for the law text.
+        Page break markers like [[Page 116 STAT. 803]] are stripped
+        to prevent them from breaking citation substring matching.
         """
         soup = BeautifulSoup(html, "lxml")
         # GovInfo wraps law text in <pre> tags
         body = soup.select_one("pre") or soup.select_one("body")
         for tag in body.find_all(["script", "style", "noscript"]):
             tag.decompose()
-        return body.get_text()
+        text = body.get_text()
+        return _PAGE_MARKER_RE.sub("", text)
 
     async def fetch_text(self, doc_id: str) -> tuple[str | None, bool]:
         """Fetch and extract clean text."""

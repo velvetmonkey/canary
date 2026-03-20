@@ -466,6 +466,7 @@ async def run_extract_objectives(
             celex_id=celex_id,
             run_id=run_id,
             source_text=text,
+            fetcher=source.get("fetcher", "eurlex"),
         )
 
         # Check citation verification from the generated note
@@ -512,6 +513,7 @@ async def run_extract_objectives(
             objectives=extraction.objectives,
             verified_articles=verified_articles,
             run_id=run_id,
+            fetcher=source.get("fetcher", "eurlex"),
         )
         path = await vault_writer.write_readme(
             readme_md,
