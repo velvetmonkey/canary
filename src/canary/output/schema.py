@@ -1,6 +1,7 @@
 """Change report generation — markdown with YAML frontmatter."""
 
 import re
+from dataclasses import dataclass
 from datetime import date
 
 from canary.analysis.models import ComplianceObjective, ExtractionResult
@@ -313,6 +314,66 @@ def generate_regulation_readme(
     lines.extend([
         "",
         f"*Extracted {today} by CANARY (run `{run_id}`)*",
+        "",
+    ])
+
+    return "\n".join(lines)
+
+
+@dataclass
+class RegulationSummary:
+    """Summary of a regulation's objectives for the root index."""
+
+    folder: str
+    regulation_name: str
+    celex_id: str
+    total_objectives: int
+    verified_count: int
+
+
+def generate_objectives_index(
+    regulations: list[RegulationSummary],
+    run_id: str,
+) -> str:
+    """Generate a root README index for the objectives folder, listing all regulations."""
+    today = date.today().isoformat()
+    total_objectives = sum(r.total_objectives for r in regulations)
+    total_verified = sum(r.verified_count for r in regulations)
+
+    lines = [
+        "---",
+        "type: objectives-index",
+        f"regulations: {len(regulations)}",
+        f"total_objectives: {total_objectives}",
+        f"total_verified: {total_verified}",
+        f"updated: {today}",
+        f"canary_run_id: {run_id}",
+        "---",
+        "",
+        "# Compliance Objectives",
+        "",
+        f"**{len(regulations)}** regulations | "
+        f"**{total_objectives}** objectives | "
+        f"**{total_verified}/{total_objectives}** citations verified",
+        "",
+        "| Regulation | Objectives | Verified | Coverage |",
+        "|------------|------------|----------|----------|",
+    ]
+
+    for reg in sorted(regulations, key=lambda r: r.regulation_name):
+        pct = (
+            f"{reg.verified_count / reg.total_objectives:.0%}"
+            if reg.total_objectives > 0
+            else "n/a"
+        )
+        lines.append(
+            f"| [[{reg.folder}/README\\|{reg.regulation_name}]] "
+            f"| {reg.total_objectives} | {reg.verified_count} | {pct} |"
+        )
+
+    lines.extend([
+        "",
+        f"*Updated {today} by CANARY (run `{run_id}`)*",
         "",
     ])
 

@@ -162,3 +162,26 @@ class TestVaultWriter:
         path = await writer.write_objective("# Note", "Article 3", "sfdr-l1")
         assert path is not None
         assert "article-3" in path
+
+    async def test_write_readme_creates_note(self):
+        writer = VaultWriter()
+        mock_create = AsyncMock()
+        mock_create.ainvoke = AsyncMock(return_value=None)
+        writer._tools = {"vault_create_note": mock_create}
+
+        readme = "---\ntype: regulation-index\n---\n\n# SFDR"
+        path = await writer.write_readme(readme, "work/compliance/objectives/sfdr/README.md")
+        assert path == "work/compliance/objectives/sfdr/README.md"
+        call_args = mock_create.ainvoke.call_args[0][0]
+        assert call_args["overwrite"] is True
+        assert call_args["frontmatter"]["type"] == "regulation-index"
+        assert "# SFDR" in call_args["content"]
+
+    async def test_write_readme_returns_none_on_error(self):
+        writer = VaultWriter()
+        mock_create = AsyncMock()
+        mock_create.ainvoke = AsyncMock(side_effect=Exception("write failed"))
+        writer._tools = {"vault_create_note": mock_create}
+
+        result = await writer.write_readme("# README", "some/path.md")
+        assert result is None

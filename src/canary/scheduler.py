@@ -19,7 +19,12 @@ from canary.graph.graph import build_graph
 from canary.graph.nodes import set_fetcher, set_store, set_vault_writer
 from canary.graph.state import CANARYState
 from canary.issues import IssueCollector
-from canary.output.schema import generate_objective_note, generate_regulation_readme
+from canary.output.schema import (
+    RegulationSummary,
+    generate_objective_note,
+    generate_objectives_index,
+    generate_regulation_readme,
+)
 from canary.output.vault import VaultWriter
 from canary.tracing import RunMetrics, configure_langsmith
 
@@ -266,6 +271,69 @@ async def run_canary(
     return 0
 
 
+async def _build_objectives_index(
+    vault_writer: VaultWriter,
+    run_id: str,
+) -> str | None:
+    """Build a root objectives index by reading regulation READMEs from the vault."""
+    try:
+        results = await vault_writer._call_tool(
+            "search",
+            {"query": "regulation-index", "where": {"type": "regulation-index"}, "limit": 50},
+        )
+    except Exception as e:
+        logger.warning("Failed to search for regulation indexes: %s", e)
+        return None
+
+    # Parse search results into RegulationSummary list
+    summaries: list[RegulationSummary] = []
+
+    # MCP tools via langchain may return dict, list, or JSON string
+    if isinstance(results, str):
+        import json as _json
+        try:
+            results = _json.loads(results)
+        except (ValueError, TypeError):
+            logger.warning("Could not parse search results: %s", results[:200])
+            return None
+
+    items = []
+    if isinstance(results, dict):
+        items = results.get("notes", results.get("results", []))
+    elif isinstance(results, list):
+        items = results
+
+    for item in items:
+        fm = {}
+        path = ""
+        if isinstance(item, dict):
+            fm = item.get("frontmatter", {})
+            path = item.get("path", "")
+        else:
+            continue
+
+        if not fm or fm.get("type") != "regulation-index":
+            continue
+
+        # Derive folder name from path: "work/compliance/objectives/uk-fsa-2023/README.md" → "uk-fsa-2023"
+        parts = path.replace("\\", "/").split("/")
+        folder = parts[-2] if len(parts) >= 2 else ""
+
+        summaries.append(RegulationSummary(
+            folder=folder,
+            regulation_name=str(fm.get("regulation", folder)),
+            celex_id=str(fm.get("celex_id", "")),
+            total_objectives=int(fm.get("objectives", 0)),
+            verified_count=int(fm.get("verified", 0)),
+        ))
+
+    if not summaries:
+        logger.warning("No regulation indexes found — skipping root index")
+        return None
+
+    return generate_objectives_index(summaries, run_id)
+
+
 async def run_extract_objectives(
     source_id: str | None = None,
     count: int | None = None,
@@ -455,7 +523,6 @@ async def run_extract_objectives(
 
     # Write regulation README index
     if vault_writer:
-        from canary.output.vault import _split_frontmatter
         reg_short = source["id"].lower()
         readme_md = generate_regulation_readme(
             regulation_name=extraction.regulation_name,
@@ -464,21 +531,21 @@ async def run_extract_objectives(
             verified_articles=verified_articles,
             run_id=run_id,
         )
-        fm, body = _split_frontmatter(readme_md)
-        try:
-            await vault_writer._call_tool(
-                "vault_create_note",
-                {
-                    "path": f"{vault_writer._output_root}/objectives/{reg_short}/README.md",
-                    "content": body,
-                    "frontmatter": fm,
-                    "overwrite": True,
-                    "suggestOutgoingLinks": True,
-                },
-            )
+        path = await vault_writer.write_readme(
+            readme_md,
+            f"{vault_writer._output_root}/objectives/{reg_short}/README.md",
+        )
+        if path:
             logger.info("Wrote regulation index: %s/README.md", reg_short)
-        except Exception as e:
-            logger.warning("Failed to write regulation index: %s", e)
+
+        # Write/update root objectives index
+        root_index = await _build_objectives_index(vault_writer, run_id)
+        if root_index:
+            await vault_writer.write_readme(
+                root_index,
+                f"{vault_writer._output_root}/objectives/README.md",
+            )
+            logger.info("Wrote objectives root index")
 
     # Summary
     total_citations = verified_count + unverified_count

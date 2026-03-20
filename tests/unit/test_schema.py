@@ -3,9 +3,11 @@
 from canary.analysis.models import ComplianceObjective, ExtractionResult, RegulatoryChange
 from canary.analysis.verifier import CitationResult, VerificationReport
 from canary.output.schema import (
+    RegulationSummary,
     _yaml_quote,
     generate_change_report,
     generate_objective_note,
+    generate_objectives_index,
     generate_regulation_readme,
 )
 
@@ -338,3 +340,57 @@ class TestGenerateRegulationReadme:
     def test_regulation_name_with_colon(self):
         readme = generate_regulation_readme("Regulation (EU) 2019/2088: SFDR", "32019R2088", [], set(), "run-001")
         assert 'regulation: "Regulation (EU) 2019/2088: SFDR"' in readme
+
+
+def _make_reg_summary(folder="sfdr-l1", name="SFDR", celex="32019R2088", total=10, verified=8):
+    return RegulationSummary(
+        folder=folder,
+        regulation_name=name,
+        celex_id=celex,
+        total_objectives=total,
+        verified_count=verified,
+    )
+
+
+class TestGenerateObjectivesIndex:
+    def test_contains_frontmatter(self):
+        index = generate_objectives_index([_make_reg_summary()], "run-001")
+        assert "type: objectives-index" in index
+        assert "regulations: 1" in index
+        assert "total_objectives: 10" in index
+        assert "total_verified: 8" in index
+        assert "canary_run_id: run-001" in index
+
+    def test_aggregates_across_regulations(self):
+        regs = [
+            _make_reg_summary(folder="sfdr", name="SFDR", total=10, verified=8),
+            _make_reg_summary(folder="taxonomy", name="Taxonomy", total=5, verified=3),
+        ]
+        index = generate_objectives_index(regs, "run-001")
+        assert "regulations: 2" in index
+        assert "total_objectives: 15" in index
+        assert "total_verified: 11" in index
+
+    def test_table_rows_sorted_by_name(self):
+        regs = [
+            _make_reg_summary(folder="z-reg", name="Zebra Reg"),
+            _make_reg_summary(folder="a-reg", name="Alpha Reg"),
+        ]
+        index = generate_objectives_index(regs, "run-001")
+        alpha_pos = index.index("Alpha Reg")
+        zebra_pos = index.index("Zebra Reg")
+        assert alpha_pos < zebra_pos
+
+    def test_coverage_percentage(self):
+        index = generate_objectives_index([_make_reg_summary(total=10, verified=7)], "run-001")
+        assert "70%" in index
+
+    def test_wikilinks_to_regulation_readmes(self):
+        index = generate_objectives_index([_make_reg_summary(folder="sfdr-l1", name="SFDR")], "run-001")
+        assert "[[sfdr-l1/README\\|SFDR]]" in index
+
+    def test_empty_regulations(self):
+        index = generate_objectives_index([], "run-001")
+        assert "regulations: 0" in index
+        assert "total_objectives: 0" in index
+        assert "| Regulation |" in index

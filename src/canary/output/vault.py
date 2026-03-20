@@ -190,6 +190,33 @@ class VaultWriter:
             logger.error("Failed to write objective to vault: %s", e)
             return None
 
+    async def write_readme(
+        self,
+        readme_md: str,
+        path: str,
+    ) -> str | None:
+        """Write a README index note to the vault.
+
+        Returns the path of the created note, or None on error.
+        """
+        frontmatter, body = _split_frontmatter(readme_md)
+        try:
+            result = await self._call_tool(
+                "vault_create_note",
+                {
+                    "path": path,
+                    "content": body,
+                    "frontmatter": frontmatter,
+                    "overwrite": True,
+                    "suggestOutgoingLinks": True,
+                },
+            )
+            self._log_vault_result("readme", path, result)
+            return path
+        except Exception as e:
+            logger.error("Failed to write readme to vault: %s", e)
+            return None
+
     def _log_vault_result(self, note_type: str, note_path: str, result: Any) -> None:
         """Log vault write result, extracting wikilink info if present."""
         result_str = str(result) if result else ""
