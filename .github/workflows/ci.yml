@@ -20,4 +20,10 @@ jobs:
         run: uv run ruff check src/ tests/
 
       - name: Test
-        run: uv run pytest -m "not integration and not llm" -q
+        run: uv run pytest -m "not integration and not llm" -v --tb=short --junitxml=test-results.xml --cov=canary --cov-report=term-missing:skip-covered
+
+      - name: Test Summary
+        uses: test-summary/action@v2
+        with:
+          paths: test-results.xml
+        if: always()

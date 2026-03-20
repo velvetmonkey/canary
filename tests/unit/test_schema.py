@@ -2,7 +2,12 @@
 
 from canary.analysis.models import ComplianceObjective, ExtractionResult, RegulatoryChange
 from canary.analysis.verifier import CitationResult, VerificationReport
-from canary.output.schema import _yaml_quote, generate_change_report, generate_objective_note
+from canary.output.schema import (
+    _yaml_quote,
+    generate_change_report,
+    generate_objective_note,
+    generate_regulation_readme,
+)
 
 
 def _make_source(celex_id="32019R2088", label="SFDR L1", source_id="SFDR-L1"):
@@ -249,3 +254,87 @@ class TestYamlFrontmatterEscaping:
             run_id="run-test",
         )
         assert 'regulation: "Regulation (EU) 2019/2088: SFDR"' in note
+
+
+def _make_objective(article="Article 3(1)", title="Test obligation", obligation_type="disclosure", materiality="high"):
+    return ComplianceObjective(
+        article=article,
+        title=title,
+        obligation_type=obligation_type,
+        who="financial market participants",
+        what="Disclose sustainability risks",
+        where="on websites",
+        deadline=None,
+        materiality=materiality,
+        verbatim_quote="shall disclose sustainability risks",
+    )
+
+
+class TestGenerateRegulationReadme:
+    def test_contains_frontmatter(self):
+        objectives = [_make_objective()]
+        readme = generate_regulation_readme("SFDR", "32019R2088", objectives, {"Article 3(1)"}, "run-001")
+        assert "type: regulation-index" in readme
+        assert "regulation: SFDR" in readme
+        assert "celex_id: 32019R2088" in readme
+        assert "objectives: 1" in readme
+        assert "verified: 1" in readme
+        assert "canary_run_id: run-001" in readme
+
+    def test_obligations_table_rows(self):
+        objectives = [
+            _make_objective(article="Article 3", title="Risk policies"),
+            _make_objective(article="Article 8", title="Transparency"),
+        ]
+        readme = generate_regulation_readme("SFDR", "32019R2088", objectives, set(), "run-001")
+        assert "| Article 3 | Risk policies |" in readme
+        assert "| Article 8 | Transparency |" in readme
+
+    def test_verified_citation_status(self):
+        objectives = [_make_objective(article="Article 3")]
+        readme = generate_regulation_readme("SFDR", "32019R2088", objectives, {"Article 3"}, "run-001")
+        assert "| verified |" in readme
+
+    def test_unverified_citation_status(self):
+        objectives = [_make_objective(article="Article 3")]
+        readme = generate_regulation_readme("SFDR", "32019R2088", objectives, set(), "run-001")
+        assert "| **UNVERIFIED** |" in readme
+
+    def test_coverage_by_type(self):
+        objectives = [
+            _make_objective(obligation_type="disclosure"),
+            _make_objective(article="Article 4", obligation_type="disclosure"),
+            _make_objective(article="Article 5", obligation_type="governance"),
+        ]
+        readme = generate_regulation_readme("SFDR", "32019R2088", objectives, set(), "run-001")
+        assert "- **disclosure**: 2" in readme
+        assert "- **governance**: 1" in readme
+
+    def test_coverage_by_materiality(self):
+        objectives = [
+            _make_objective(materiality="high"),
+            _make_objective(article="Article 4", materiality="high"),
+            _make_objective(article="Article 5", materiality="medium"),
+            _make_objective(article="Article 6", materiality="low"),
+        ]
+        readme = generate_regulation_readme("SFDR", "32019R2088", objectives, set(), "run-001")
+        lines = readme.split("\n")
+        mat_section = "\n".join(lines[lines.index("## Coverage by Materiality"):])
+        high_pos = mat_section.index("**high**")
+        medium_pos = mat_section.index("**medium**")
+        low_pos = mat_section.index("**low**")
+        assert high_pos < medium_pos < low_pos
+
+    def test_eurlex_link(self):
+        readme = generate_regulation_readme("SFDR", "32019R2088", [], set(), "run-001")
+        assert "CELEX:32019R2088" in readme
+
+    def test_empty_objectives(self):
+        readme = generate_regulation_readme("SFDR", "32019R2088", [], set(), "run-001")
+        assert "objectives: 0" in readme
+        assert "verified: 0" in readme
+        assert "| Article |" in readme  # table header still present
+
+    def test_regulation_name_with_colon(self):
+        readme = generate_regulation_readme("Regulation (EU) 2019/2088: SFDR", "32019R2088", [], set(), "run-001")
+        assert 'regulation: "Regulation (EU) 2019/2088: SFDR"' in readme

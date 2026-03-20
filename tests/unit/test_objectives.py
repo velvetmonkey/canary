@@ -1,12 +1,18 @@
 """Tests for objective extraction, including chunked extraction for large documents."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import anthropic
+import pytest
+from tenacity import wait_none
 
 from canary.analysis.models import ComplianceObjective, ObjectiveExtraction
 from canary.analysis.objectives import (
     ObjectiveMetrics,
+    RequoteResult,
     _split_chunks,
     extract_objectives,
+    requote_citations,
 )
 
 
@@ -180,3 +186,127 @@ class TestExtractObjectivesChunked:
         result, _ = await extract_objectives("x" * 200, count=10)
         assert len(result.objectives) == 1
         assert result.objectives[0].title == "First version"
+
+
+class TestRequoteCitations:
+    @patch("canary.analysis.objectives._RETRY_WAIT", wait_none())
+    @patch("canary.analysis.objectives.ChatAnthropic")
+    async def test_returns_corrected_objectives(self, mock_chat_cls):
+        corrected = _mock_objective(article="Article 3(1)", title="Corrected")
+        mock_raw_msg = AsyncMock()
+        mock_raw_msg.usage_metadata = {"input_tokens": 500, "output_tokens": 200}
+
+        mock_structured = AsyncMock()
+        mock_structured.ainvoke = AsyncMock(
+            return_value={
+                "parsed": RequoteResult(corrections=[corrected]),
+                "raw": mock_raw_msg,
+            }
+        )
+
+        mock_llm = MagicMock()
+        mock_llm.with_structured_output.return_value = mock_structured
+        mock_chat_cls.return_value = mock_llm
+
+        originals = [_mock_objective()]
+        results, metrics = await requote_citations(originals, "source text")
+
+        assert len(results) == 1
+        assert results[0].title == "Corrected"
+
+    @patch("canary.analysis.objectives._RETRY_WAIT", wait_none())
+    @patch("canary.analysis.objectives.ChatAnthropic")
+    async def test_metrics_tracked(self, mock_chat_cls):
+        corrected = _mock_objective()
+        mock_raw_msg = AsyncMock()
+        mock_raw_msg.usage_metadata = {"input_tokens": 800, "output_tokens": 300}
+
+        mock_structured = AsyncMock()
+        mock_structured.ainvoke = AsyncMock(
+            return_value={
+                "parsed": RequoteResult(corrections=[corrected]),
+                "raw": mock_raw_msg,
+            }
+        )
+
+        mock_llm = MagicMock()
+        mock_llm.with_structured_output.return_value = mock_structured
+        mock_chat_cls.return_value = mock_llm
+
+        _, metrics = await requote_citations([_mock_objective()], "source text")
+        assert metrics.input_tokens == 800
+        assert metrics.output_tokens == 300
+        assert metrics.duration_ms > 0
+
+    @patch("canary.analysis.objectives._RETRY_WAIT", wait_none())
+    @patch("canary.analysis.objectives.ChatAnthropic")
+    async def test_prompt_contains_article_refs(self, mock_chat_cls):
+        corrected = _mock_objective()
+        mock_raw_msg = AsyncMock()
+        mock_raw_msg.usage_metadata = {}
+
+        mock_structured = AsyncMock()
+        mock_structured.ainvoke = AsyncMock(
+            return_value={
+                "parsed": RequoteResult(corrections=[corrected]),
+                "raw": mock_raw_msg,
+            }
+        )
+
+        mock_llm = MagicMock()
+        mock_llm.with_structured_output.return_value = mock_structured
+        mock_chat_cls.return_value = mock_llm
+
+        await requote_citations([_mock_objective()], "source text here")
+
+        call_args = mock_structured.ainvoke.call_args[0][0]
+        user_msg = call_args[1]["content"]
+        assert "Article 3(1)" in user_msg
+        assert "shall disclose sustainability risks" in user_msg
+
+    @patch("canary.analysis.objectives._RETRY_WAIT", wait_none())
+    @patch("canary.analysis.objectives.ChatAnthropic")
+    async def test_retry_on_api_error(self, mock_chat_cls):
+        corrected = _mock_objective()
+        mock_raw_msg = AsyncMock()
+        mock_raw_msg.usage_metadata = {"input_tokens": 100, "output_tokens": 50}
+
+        mock_structured = AsyncMock()
+        mock_structured.ainvoke = AsyncMock(
+            side_effect=[
+                anthropic.APIStatusError(
+                    message="overloaded",
+                    response=MagicMock(status_code=529),
+                    body=None,
+                ),
+                {
+                    "parsed": RequoteResult(corrections=[corrected]),
+                    "raw": mock_raw_msg,
+                },
+            ]
+        )
+
+        mock_llm = MagicMock()
+        mock_llm.with_structured_output.return_value = mock_structured
+        mock_chat_cls.return_value = mock_llm
+
+        results, _ = await requote_citations([_mock_objective()], "source text")
+        assert len(results) == 1
+        assert mock_structured.ainvoke.call_count == 2
+
+    @patch("canary.analysis.objectives._RETRY_WAIT", wait_none())
+    @patch("canary.analysis.objectives.ChatAnthropic")
+    async def test_exhausted_retries_raises(self, mock_chat_cls):
+        mock_structured = AsyncMock()
+        mock_structured.ainvoke = AsyncMock(
+            side_effect=anthropic.APIConnectionError(request=MagicMock())
+        )
+
+        mock_llm = MagicMock()
+        mock_llm.with_structured_output.return_value = mock_structured
+        mock_chat_cls.return_value = mock_llm
+
+        with pytest.raises(anthropic.APIConnectionError):
+            await requote_citations([_mock_objective()], "source text")
+
+        assert mock_structured.ainvoke.call_count == 2  # stop_after_attempt(2)
