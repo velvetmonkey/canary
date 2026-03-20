@@ -53,7 +53,9 @@ Continuous monitoring of financial regulation across 5 jurisdictions — fetch c
 
 ### Extraction Output
 
-> **See [`output/`](output/) for real extraction output** — 453 compliance objectives across 14 regulations in 5 jurisdictions, each with verified citations and cross-linked wikilinks.
+CANARY has extracted 453 compliance objectives from 13 regulations across 5 jurisdictions. Each objective captures who must comply, what they must do, and a verbatim quote from the regulation — with 397 of 453 citations (88%) mechanically verified against the published source text.
+
+> **See [`output/README.md`](output/README.md) for the full explanation** of what each output type contains, how to read the frontmatter, and how to verify any citation manually. Browse the raw output at [`output/`](output/).
 
 | Source | Regulation | Objectives |
 |--------|-----------|-----------|
@@ -641,11 +643,15 @@ Each source needs:
     └── 2026-03-11.md                   # Daily log entries
 ```
 
-> **See [`output/`](output/) for real extraction output** — 453 compliance objectives across 14 regulations in 5 jurisdictions, each with verified citations and cross-linked wikilinks. This is actual CANARY output, not synthetic examples.
+> **See [`output/README.md`](output/README.md)** for a non-technical guide to the output: what each report type means, how to read the frontmatter, and how to verify any citation manually.
 
 ### Output Formats
 
-#### Change report (YAML frontmatter)
+> For a plain-English explanation of each output type and what value it provides, see [`output/README.md`](output/README.md).
+
+#### Change report (`regulatory-change`)
+
+Generated when CANARY detects that a monitored regulation has been amended. Contains the severity, affected articles, and supporting quotes with verification status.
 
 ```yaml
 ---
@@ -662,7 +668,9 @@ canary_run_id: run-3e58d4b8c79e
 ---
 ```
 
-#### Compliance objective (YAML frontmatter)
+#### Compliance objective (`compliance-objective`)
+
+One note per regulatory obligation. Captures who must comply, what they must do, and a verbatim quote verified against the source text.
 
 ```yaml
 ---
@@ -680,7 +688,25 @@ canary_run_id: obj-9e70ff63fb9f
 ---
 ```
 
+#### Regulation index (`regulation-index`)
+
+A README per regulation folder — table of contents with verification statistics and coverage breakdown by obligation type and materiality.
+
+```yaml
+---
+type: regulation-index
+regulation: Financial Services and Markets Act 2023 (FSMA 2023)
+celex_id: ukpga/2023/29
+objectives: 10
+verified: 5
+updated: 2026-03-18
+canary_run_id: obj-97906736fa27
+---
+```
+
 #### Run summary (JSON)
+
+Structured log of each pipeline run — how many sources were checked, what was detected, and token usage.
 
 ```json
 {
