@@ -55,7 +55,7 @@ Continuous monitoring of financial regulation across 5 jurisdictions — fetch c
 
 ### Extraction Output
 
-CANARY has extracted 453 compliance objectives from 13 regulations across 5 jurisdictions. Each objective captures who must comply, what they must do, and a verbatim quote from the regulation — with 397 of 453 citations (88%) mechanically verified against the published source text.
+CANARY has extracted 487 compliance objectives from 13 regulations across 5 jurisdictions. Each objective captures who must comply, what they must do, and a verbatim quote from the regulation — with 431 of 487 citations (89%) mechanically verified against the published source text.
 
 > **See [`output/README.md`](output/README.md) for the full explanation** of what each output type contains, how to read the frontmatter, and how to verify any citation manually. Browse the raw output at [`output/`](output/).
 
@@ -71,7 +71,7 @@ CANARY has extracted 453 compliance objectives from 13 regulations across 5 juri
 | `UK-SDR-REGS` | UK Sustainability Disclosure Requirements Regs 2023 | 10 |
 | `UK-CLIMATE-CHANGE` | UK Climate Change Act 2008 | 10 |
 | `UK-ENV-ACT` | UK Environment Act 2021 | 10 |
-| `US-SOX` | US Sarbanes-Oxley Act 2002 | 10 |
+| `US-SOX` | US Sarbanes-Oxley Act 2002 | 44 |
 | `NZ-FMC-ACT` | NZ Financial Markets Conduct Act 2013 | 20 |
 | `IE-COMPANIES-ACT` | Irish Companies Act 2014 | 10 |
 

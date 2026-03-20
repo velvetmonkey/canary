@@ -1,6 +1,6 @@
 # CANARY Output
 
-This folder contains real extraction output from CANARY — not synthetic examples. It holds 453 compliance objectives extracted from 13 regulations across 5 jurisdictions, with 397 of 453 citations (88%) mechanically verified against the published source text.
+This folder contains real extraction output from CANARY — not synthetic examples. It holds 487 compliance objectives extracted from 13 regulations across 5 jurisdictions, with 431 of 487 citations (89%) mechanically verified against the published source text.
 
 ## Folder Layout
 
@@ -92,7 +92,7 @@ Every citation is checked with a deterministic substring match against the publi
 - **`[verified]`** = the exact quote was found in the source text. You can confirm this yourself by opening the `source_url` and searching for the quoted text.
 - **`[unverified]`** = the quote was not found verbatim. This warrants human review — it may be a paraphrase, a truncation, or from a different consolidation of the regulation.
 
-**Current rate:** 397/453 (88%) verified. See the [main README](../README.md#guarantees-and-trust-model) for the full technical explanation.
+**Current rate:** 431/487 (89%) verified. See the [main README](../README.md#guarantees-and-trust-model) for the full technical explanation.
 
 ## Coverage
 
@@ -108,7 +108,7 @@ Every citation is checked with a deterministic substring match against the publi
 | UK SDR Regs 2023 | [`uk-sdr-regs/`](compliance/objectives/uk-sdr-regs/) | 10 | 10 | [README](compliance/objectives/uk-sdr-regs/README.md) |
 | UK Climate Change Act | [`uk-climate-change/`](compliance/objectives/uk-climate-change/) | 10 | 10 | [README](compliance/objectives/uk-climate-change/README.md) |
 | UK Environment Act | [`uk-env-act/`](compliance/objectives/uk-env-act/) | 10 | 6 | [README](compliance/objectives/uk-env-act/README.md) |
-| US Sarbanes-Oxley | [`us-sox/`](compliance/objectives/us-sox/) | 10 | 7 | [README](compliance/objectives/us-sox/README.md) |
+| US Sarbanes-Oxley | [`us-sox/`](compliance/objectives/us-sox/) | 44 | 41 | [README](compliance/objectives/us-sox/README.md) |
 | NZ FMC Act 2013 | [`nz-fmc-act/`](compliance/objectives/nz-fmc-act/) | 20 | 20 | [README](compliance/objectives/nz-fmc-act/README.md) |
 | Irish Companies Act | [`ie-companies-act/`](compliance/objectives/ie-companies-act/) | 10 | 10 | [README](compliance/objectives/ie-companies-act/README.md) |
-| **Total** | | **453** | **397 (88%)** | |
+| **Total** | | **487** | **431 (89%)** | |

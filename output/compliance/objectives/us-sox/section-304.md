@@ -6,20 +6,19 @@ article: Section 304
 obligation_type: governance
 materiality: high
 status: active
-extracted: '2026-03-18'
+extracted: 2026-03-20
 citation: verified
-source_url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:PLAW-107publ204'
-canary_run_id: obj-cdaf48b98887
-date: '2026-03-18'
-created: '2026-03-18T18:20:24.381Z'
+source_url: https://www.govinfo.gov/content/pkg/PLAW-107publ204/html/PLAW-107publ204.htm
+canary_run_id: obj-a3dafaa00000
 ---
-# Section 304 — Clawback of CEO/CFO Bonuses Following Financial Restatement
+
+# Section 304 — CEO/CFO Clawback of Bonuses and Profits After Restatement
 
 ## Obligation
 
 **Who:** Chief executive officers and chief financial officers of issuers required to prepare accounting restatements due to misconduct
-**What:** If an issuer must restate its financials due to material noncompliance resulting from misconduct, the CEO and CFO must reimburse the issuer for any incentive-based or equity-based compensation received during the 12-month period following the first public issuance of the misstated financial document, and any profits from securities sales during that period.
-**Where:** reimbursement to the issuer following a required accounting restatement
+**What:** If an issuer must prepare an accounting restatement due to material noncompliance with financial reporting requirements resulting from misconduct, the CEO and CFO must reimburse the issuer for: (1) any bonus or incentive/equity-based compensation received during the 12-month period following the first public issuance or filing of the restated financial document; and (2) any profits from the sale of issuer securities during that 12-month period.
+**Where:** Reimbursement to the issuer
 **Materiality:** high
 
 ## Legal Basis
