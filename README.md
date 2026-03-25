@@ -25,9 +25,22 @@ EUR-Lex/UK Legislation/GovInfo → fetch → detect → extract → verify → r
 
 The key LangGraph insight: a conditional edge after `detect_change` skips the LLM entirely when nothing changed. Most runs cost nothing. This makes hourly monitoring of 14 sources economically viable (~$0.05/run, ~15s total).
 
+## The Big Idea: Verified Citations
+
+LLMs make things up. Ask Claude to quote a regulation and it might give you something that *sounds* right but doesn't actually appear in the document. In a compliance context, that's dangerous.
+
+**CANARY checks every single quote.** After Claude extracts an obligation and provides a supporting quote, CANARY takes that quote and searches for it in the actual published regulation text. Not with AI — with a straight substring match. Either the quote is in the document or it isn't.
+
+- **`[verified]`** — the quote was found word-for-word in the real regulation. You can open the source URL and Ctrl+F it yourself.
+- **`[unverified]`** — the quote wasn't found. It gets flagged for human review. It is never silently accepted.
+
+This is harder than it sounds. Legal databases use different quote characters (`"` vs `"`), invisible Unicode spaces, footnote markers jammed into the text, and ligatures from PDF conversion. A naive string search fails on perfectly correct quotes. So CANARY normalizes both the quote and the source text first (smart quotes → ASCII, dashes → hyphens, invisible characters stripped, whitespace collapsed) and tries 5 matching strategies before giving up. When all 5 fail, a re-quote pipeline asks Claude to find the exact passage again and re-verifies.
+
+**Result: 431 of 487 citations (89%) verified** across 13 regulations and 5 jurisdictions. See [Citation Verification](docs/citation-verification.md) for the full technical detail.
+
 ## What the Output Looks Like
 
-CANARY has extracted **487 compliance objectives** from 13 regulations across 5 jurisdictions, with **431 citations (89%) mechanically verified**. Each objective is a self-contained file like this:
+Each objective is a self-contained markdown file — structured frontmatter for filtering, a plain-English obligation breakdown, and a **verified legal quote** you can trace back to the source:
 
 ```yaml
 ---
@@ -36,8 +49,8 @@ regulation: Regulation (EU) 2019/2088 (SFDR)
 article: "Article 8(1)"
 obligation_type: disclosure
 materiality: high
-citation: verified
-source_url: https://eur-lex.europa.eu/...
+citation: verified                          # <-- mechanically checked
+source_url: https://eur-lex.europa.eu/...   # <-- go verify it yourself
 canary_run_id: obj-fb4c37ee3772
 ---
 ```
@@ -57,7 +70,7 @@ consistent with those characteristics.
 **Deadline:** 10 March 2021
 **Materiality:** high
 
-## Legal Basis
+## Legal Basis                              <-- the actual quote from the law
 
 > Where a financial product promotes, among other characteristics,
 > environmental or social characteristics, or a combination of those
@@ -65,12 +78,12 @@ consistent with those characteristics.
 > are made follow good governance practices, the information to be
 > disclosed pursuant to Article 6(1) and (3) shall include the following...
 
-*Article 8(1), Regulation (EU) 2019/2088 (SFDR)* [verified]
+*Article 8(1), Regulation (EU) 2019/2088 (SFDR)* [verified]   <-- CANARY found
+                                                                   this quote in
+                                                                   the real document
 ```
 
-The `[verified]` tag means this quote was found verbatim in the published regulation via mechanical substring matching — not a confidence score, not an AI judgment, a deterministic pass/fail check. An auditor can verify it independently.
-
-Browse all 487 objectives: [`output/`](output/) | Guide: [`output/README.md`](output/README.md)
+**487 objectives** extracted from 13 regulations. Browse them: [`output/`](output/) | Guide: [`output/README.md`](output/README.md)
 
 ## Why It's Interesting
 
