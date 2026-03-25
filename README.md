@@ -58,30 +58,35 @@ canary_run_id: obj-fb4c37ee3772
 ```markdown
 # Article 8(1) — Pre-contractual disclosure for Article 8 products
 
-## Obligation
+## Obligation                               <-- Claude's plain-English summary
 
 **Who:** Financial market participants
-**What:** For each financial product that promotes environmental or social
-characteristics (Article 8 fund), include in pre-contractual disclosures:
-(a) information on how those characteristics are met, and (b) if an index
-is designated as a reference benchmark, whether and how that index is
-consistent with those characteristics.
+**What:** For each financial product that    <-- Claude reads the legal text and
+promotes environmental or social                 explains what it actually means
+characteristics (Article 8 fund), include        in normal words
+in pre-contractual disclosures: (a) info
+on how those characteristics are met...
 **Where:** In pre-contractual disclosures
 **Deadline:** 10 March 2021
 **Materiality:** high
 
-## Legal Basis                              <-- the actual quote from the law
+## Legal Basis                              <-- the proof
 
-> Where a financial product promotes, among other characteristics,
-> environmental or social characteristics, or a combination of those
-> characteristics, provided that the companies in which the investments
-> are made follow good governance practices, the information to be
-> disclosed pursuant to Article 6(1) and (3) shall include the following...
+> Where a financial product promotes,       <-- this is copied verbatim from the
+> among other characteristics,                   real regulation on EUR-Lex.
+> environmental or social characteristics,       CANARY searched the actual
+> or a combination of those                      published document and confirmed
+> characteristics, provided that the             this exact text exists there.
+> companies in which the investments             that's what [verified] means.
+> are made follow good governance
+> practices, the information to be
+> disclosed pursuant to Article 6(1)
+> and (3) shall include the following...
 
-*Article 8(1), Regulation (EU) 2019/2088 (SFDR)* [verified]   <-- CANARY found
-                                                                   this quote in
-                                                                   the real document
+*Article 8(1), Regulation (EU) 2019/2088 (SFDR)* [verified]
 ```
+
+So in each objective: the **Obligation** section is Claude explaining the law in plain English. The **Legal Basis** section is the actual verbatim quote from the published regulation that backs it up — and `[verified]` means CANARY confirmed that quote really exists in the source document.
 
 **487 objectives** extracted from 13 regulations. Browse them: [`output/`](output/) | Guide: [`output/README.md`](output/README.md)
 
