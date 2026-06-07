@@ -90,7 +90,12 @@ docker run --rm \
   -v "$(pwd)/demo-out:/out" seal-canary-demo
 ```
 
-The key console lines are colour-coded: green = allowed / approval present, red = blocked, bold = the final verdict. Colour is on when stdout is a TTY or when `FORCE_COLOR=1` is set (the helper sets it); `NO_COLOR=1` disables it.
+Output is colour-coded so the streams are tellable apart at a glance:
+
+- **Runner narration** is bright and tinted per source: Canary pipeline = yellow, seal gate = cyan, with green/red/bold for allowed/blocked/verdict.
+- **Server stderr** is dimmed so it recedes: the flywheel-memory server = dim cyan, seal's own logs = dim magenta. (The noisy flywheel startup chatter is the dim cyan block.)
+
+Colour is on when stdout is a TTY or when `FORCE_COLOR=1` is set (the helper sets it); `NO_COLOR=1` disables it.
 
 #### Writing a policy
 

@@ -18,11 +18,14 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import threading
+from contextlib import asynccontextmanager
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from langchain_mcp_adapters.client import MultiServerMCPClient
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 
 from canary.detection.hasher import compute_hash
 from canary.detection.store import SCHEMA_SQL, SCHEMA_VERSION
@@ -159,6 +162,14 @@ _ANSI = {
     "fail": "\033[1;31m",     # bold red: final FAIL
     "step": "\033[1;36m",     # bold cyan: a scenario step header
 }
+# Per-source tint for plain runner narration, so the streams are tellable apart.
+_SOURCE_TINT = {
+    "SEAL": "\033[36m",       # cyan: seal gate narration
+    "CANARY": "\033[33m",     # yellow: the Canary pipeline
+    "WRITE": "\033[32m",
+    "DELETE": "\033[35m",
+    "VERDICT": "\033[1m",
+}
 _RESET = "\033[0m"
 
 
@@ -171,13 +182,85 @@ def _color_on() -> bool:
 
 
 def say(stream: str, message: str, kind: str = "info") -> None:
-    """Print a tagged line. kind in {info,allow,block,pass,fail,step} colours
-    the lines that matter when stdout is a TTY (or FORCE_COLOR is set)."""
+    """Print a tagged runner line. An explicit kind (allow/block/pass/fail/step)
+    colours by meaning; plain info lines are tinted per source so Canary, seal
+    and the runner are tellable apart. Server (seal/flywheel) stderr is dimmed
+    separately by _StreamTinter."""
     line = f"[{stream}] {message}"
-    tint = _ANSI.get(kind)
+    tint = _ANSI.get(kind) if kind != "info" else _SOURCE_TINT.get(stream.upper())
     if tint and _color_on():
         line = f"{tint}{line}{_RESET}"
     print(line, flush=True)
+
+
+# Lines the flywheel-memory node server emits to stderr (already self-prefixed).
+_FLYWHEEL_HINT = re.compile(
+    r"^\s*(\[Memory\]|\[vault-core\]|\[Flywheel\]|Scanning vault|Found \d+ markdown|Index built|Index cache)"
+)
+
+
+class _StreamTinter:
+    """A TextIO that dims server stderr by source so it recedes behind the
+    bright runner narration. flywheel = dim cyan, seal = dim magenta."""
+
+    _TINT = {"flywheel": "\033[2;36m", "seal": "\033[2;35m"}
+
+    def __init__(self, fallback_source: str) -> None:
+        self._buf = ""
+        self._fallback = fallback_source
+
+    def write(self, s: str) -> int:
+        self._buf += s
+        while "\n" in self._buf:
+            line, self._buf = self._buf.split("\n", 1)
+            self._emit(line)
+        return len(s)
+
+    def _emit(self, line: str) -> None:
+        if not line.strip():
+            return
+        source = "flywheel" if _FLYWHEEL_HINT.search(line) else self._fallback
+        tint = self._TINT.get(source)
+        out = f"{tint}{line}{_RESET}" if (tint and _color_on()) else line
+        print(out, file=sys.stderr, flush=True)
+
+    def flush(self) -> None:
+        if self._buf.strip():
+            self._emit(self._buf)
+            self._buf = ""
+
+
+@asynccontextmanager
+async def flywheel_session(label: str, vault: Path, through_seal: bool):
+    """Open an MCP session to the flywheel server (optionally through seal),
+    routing the server's stderr through _StreamTinter so it is visually dimmed
+    and separated from the runner narration."""
+    cfg = mcp_config(label, vault, through_seal)
+    params = StdioServerParameters(
+        command=cfg["command"], args=cfg["args"], env=cfg["env"], cwd=cfg["cwd"]
+    )
+    tinter = _StreamTinter("seal" if through_seal else "flywheel")
+    # The mcp client passes errlog straight to the child as its stderr FD, so it
+    # needs a real fileno. Give the child a pipe and pump the read end through
+    # the tinter on a thread, so server stderr is dimmed line by line.
+    read_fd, write_fd = os.pipe()
+    writer = os.fdopen(write_fd, "w", buffering=1, errors="replace")
+
+    def _pump() -> None:
+        with os.fdopen(read_fd, "r", errors="replace") as reader:
+            for line in reader:
+                tinter._emit(line.rstrip("\n"))
+
+    pump_thread = threading.Thread(target=_pump, daemon=True)
+    pump_thread.start()
+    try:
+        async with stdio_client(params, errlog=writer) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                yield session
+    finally:
+        writer.close()           # child already terminated; EOF ends the pump
+        pump_thread.join(timeout=2)
 
 
 def load_policy() -> dict[str, Any]:
@@ -320,8 +403,7 @@ def approval_target_from(result: Any) -> str | None:
 
 async def seed_report_create_approval() -> str | None:
     say("SEAL", f"probing report create approval target for {REPORT_PATH}")
-    client = MultiServerMCPClient({"flywheel": mcp_config("seed", VAULT, True)})
-    async with client.session("flywheel") as session:
+    async with flywheel_session("seed", VAULT, True) as session:
         cold = await asyncio.wait_for(
             session.call_tool("note", arguments=CREATE_PROBE),
             timeout=30,
@@ -365,16 +447,14 @@ def run_canary_through_seal() -> dict[str, Any]:
 
 
 async def note_tool_mentions_delete(vault: Path) -> bool:
-    client = MultiServerMCPClient({"flywheel": mcp_config("tools", vault, False)})
-    async with client.session("flywheel") as session:
+    async with flywheel_session("tools", vault, False) as session:
         listed = await asyncio.wait_for(session.list_tools(), timeout=30)
     note = next((tool for tool in listed.tools if tool.name == "note"), None)
     return bool(note and "delete" in json.dumps(normalize_tool_result(note), default=str))
 
 
 async def call_delete(vault: Path, through_seal: bool) -> dict[str, Any]:
-    client = MultiServerMCPClient({"flywheel": mcp_config("delete", vault, through_seal)})
-    async with client.session("flywheel") as session:
+    async with flywheel_session("delete", vault, through_seal) as session:
         result = await asyncio.wait_for(session.call_tool("note", arguments=DELETE_ARGS), timeout=30)
     return {
         "result": normalize_tool_result(result),
@@ -496,8 +576,7 @@ def write_report(approval_target: str | None, canary: dict[str, Any], proof: dic
 
 
 async def call_note(vault: Path, args: dict[str, Any], through_seal: bool) -> dict[str, Any]:
-    client = MultiServerMCPClient({"flywheel": mcp_config("note", vault, through_seal)})
-    async with client.session("flywheel") as session:
+    async with flywheel_session("note", vault, through_seal) as session:
         result = await asyncio.wait_for(session.call_tool("note", arguments=args), timeout=30)
     return {"result": normalize_tool_result(result), "text": result_text(result)}
 
