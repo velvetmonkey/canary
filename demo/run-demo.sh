@@ -3,8 +3,9 @@
 # to ./demo-out on the host. Designed for fast iteration on the approval config.
 #
 # Usage:
-#   demo/run-demo.sh                      # default baked policy
+#   demo/run-demo.sh                      # default baked policy (P3 kill/restore)
 #   demo/run-demo.sh my-policy.json       # experiment with a custom policy
+#   SCENARIO=lifecycle demo/run-demo.sh   # allow write, deny delete until approved
 #   SEAL_EXTRA_APPROVALS=more.ndjson demo/run-demo.sh my-policy.json
 #   FORCE_BUILD=1 demo/run-demo.sh        # rebuild the image even if it exists
 #
@@ -27,7 +28,12 @@ else
 fi
 
 mkdir -p "$OUT"
-args=(--rm -v "$OUT:/out")
+args=(--rm -e FORCE_COLOR=1 -v "$OUT:/out")
+
+if [ -n "${SCENARIO:-}" ]; then
+    args+=(-e "SEAL_SCENARIO=$SCENARIO")
+    echo "==> scenario: $SCENARIO"
+fi
 
 if [ -n "$POLICY" ]; then
     [ -f "$POLICY" ] || { echo "policy file not found: $POLICY" >&2; exit 1; }

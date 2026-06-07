@@ -101,11 +101,33 @@ The policy is **not** baked into a rebuild. Mount your own at run time via
 build-if-needed + run + mount + report tail:
 
 ```bash
-demo/run-demo.sh                          # baked default policy
+demo/run-demo.sh                          # baked default policy (P3 kill/restore)
 demo/run-demo.sh my-policy.json           # your policy, no rebuild
+SCENARIO=lifecycle demo/run-demo.sh       # approval-lifecycle scenario (below)
 SEAL_EXTRA_APPROVALS=more.ndjson demo/run-demo.sh my-policy.json
 FORCE_BUILD=1 demo/run-demo.sh            # force an image rebuild
 ```
+
+The key console lines are colour-coded (green = allowed / approval present, red =
+blocked, bold = the final verdict). Colour is on when stdout is a TTY or when
+`FORCE_COLOR=1` is set (the helper sets it); `NO_COLOR=1` disables it.
+
+#### Scenario: allow the write, deny the delete until approved
+
+`SCENARIO=lifecycle` (env `SEAL_SCENARIO=lifecycle`) runs an approval-lifecycle
+demo instead of the kill/restore proof:
+
+1. **Write** (`note/create`) is approved and lands.
+2. **Delete** (`note/delete`) is attempted with **no** approval and is blocked;
+   the note survives.
+3. A trusted approval for the delete is then written, and the same delete is
+   attempted again and **succeeds**.
+
+It uses a single `note` rule guarding both actions, with the approval target
+derived from the `action` arg so create and delete carry **distinct** approval
+tokens (approving one never approves the other). Note: seal v1 has no bare
+`allow` mode, so "allowed" always means *guarded and carrying a valid approval*,
+which is the honest security claim.
 
 Or by hand:
 
