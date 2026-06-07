@@ -25,6 +25,22 @@ EUR-Lex/UK Legislation/GovInfo → fetch → detect → extract → verify → r
 
 The key LangGraph insight: a conditional edge after `detect_change` skips the LLM entirely when nothing changed. Most runs cost nothing. This makes hourly monitoring of 14 sources economically viable (~$0.05/run, ~15s total).
 
+## Security Demo: seal x Canary
+
+This repo also hosts the demo for [seal](https://github.com/velvetmonkey/mcp-seal), a verified MCP approval-gate sidecar. It runs Canary in front of `seal` and proves a destructive vault write dies at a gate the model cannot influence.
+
+Run it, fully offline, no API key:
+
+```bash
+uv run python demo/run_p3.py
+```
+
+The runner rebuilds a disposable workspace under `/tmp/seal-demo-p3`, runs the Canary pipeline through `seal` (the legitimate report `note/create` is approved and lands), then runs the kill/restore proof: the same `note/delete` is **deleted without `seal`** and **blocked with `seal`**, the file surviving byte-identical. It ends in a PASS/FAIL line.
+
+No `ANTHROPIC_API_KEY` and no network are required. The regulation corpus is frozen on disk (`demo/corpus`) and the extraction step is replayed from a fixture (`CANARY_FIXTURE_EXTRACTION`), so the run is deterministic.
+
+Honest claim: a default-deny gate blocks the destructive action at a verified boundary the model cannot influence, and every allowed action is explicitly approved. It does **not** claim prompt-injection prevention; the model can still be fooled, the demo shows the action dies regardless. Full storyboard, prerequisites (the `seal` binary, Node, the Flywheel MCP server), and proof shots: [demo/DEMO.md](demo/DEMO.md).
+
 ## The Big Idea: Verified Citations
 
 LLMs make things up. Ask Claude to quote a regulation and it might give you something that *sounds* right but doesn't actually appear in the document. In a compliance context, that's dangerous.
