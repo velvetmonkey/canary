@@ -6,7 +6,7 @@
 
 A LangGraph pipeline that monitors financial regulation across 5 jurisdictions — fetches changes, extracts compliance obligations, mechanically verifies every citation, and delivers audit-ready reports.
 
-> **About this project.** CANARY is a self-teaching exercise in building a LangGraph/LangChain processing graph. The goal was to learn how to wire a multi-stage LLM pipeline with typed state, conditional edges, structured extraction, and mechanical verification — applied to a real domain (ESG regulatory compliance) rather than a toy problem. The pipeline, the verification engine, and the 487 real extraction artifacts are the interesting parts.
+> **About this project.** CANARY is a self-teaching exercise in building a LangGraph/LangChain processing graph. The goal was to learn how to wire a multi-stage LLM pipeline with typed state, conditional edges, structured [[extraction]], and mechanical verification — applied to a real domain (ESG regulatory compliance) rather than a toy problem. The pipeline, the verification engine, and the 487 real extraction artifacts are the interesting parts.
 
 ## What It Does
 
@@ -27,7 +27,7 @@ The key LangGraph insight: a conditional edge after `detect_change` skips the LL
 
 ## Security Demo: seal x Canary
 
-This repo also hosts the demo for [seal](https://github.com/velvetmonkey/mcp-seal), a verified MCP approval-gate sidecar. It runs Canary in front of `seal` and proves a destructive vault write dies at a gate the model cannot influence.
+This repo also hosts the demo for [seal](https://github.com/velvetmonkey/mcp-seal), a verified MCP approval-gate sidecar. It runs Canary in front of `seal` and proves a destructive vault write dies at a gate the [[models|model]] cannot influence.
 
 Run it, fully offline, no API key:
 
@@ -40,6 +40,14 @@ The runner rebuilds a disposable workspace under `/tmp/seal-demo-p3`, runs the C
 No `ANTHROPIC_API_KEY` and no network are required. The regulation corpus is frozen on disk (`demo/corpus`) and the extraction step is replayed from a fixture (`CANARY_FIXTURE_EXTRACTION`), so the run is deterministic.
 
 Honest claim: a default-deny gate blocks the destructive action at a verified boundary the model cannot influence, and every allowed action is explicitly approved. It does **not** claim prompt-injection prevention; the model can still be fooled, the demo shows the action dies regardless. Full storyboard, prerequisites (the `seal` binary, Node, the Flywheel MCP server), and proof shots: [demo/DEMO.md](demo/DEMO.md).
+
+One command, nothing pre-built:
+
+```bash
+docker build -t seal-canary-demo . && docker run --rm seal-canary-demo
+```
+
+The container bundles all three repos (seal + flywheel-memory + canary) at pinned versions and runs the demo offline. It exists only to pull the multi-repo **demo** together reproducibly. **seal itself is a single native binary with no Docker dependency**: adoption is a one-line host config change, not a container.
 
 ## The Big Idea: Verified Citations
 

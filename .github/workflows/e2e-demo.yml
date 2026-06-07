@@ -1,0 +1,37 @@
+name: e2e-demo (container)
+
+# Machine-independent proof of the FULL seal x Canary e2e demo: builds the
+# all-in-one image (seal + flywheel-memory + canary) on a clean GitHub runner
+# and runs it offline, asserting the kill/restore proof PASSes.
+#
+# This container exists only to pull the three-repo DEMO together reproducibly.
+# seal itself is a standalone native binary with no Docker dependency.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'demo/**'
+      - 'src/canary/analysis/extractor.py'
+      - '.github/workflows/e2e-demo.yml'
+  schedule:
+    - cron: '0 6 * * 1'   # weekly, Monday 06:00 UTC
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the all-in-one demo image
+        run: docker build -t seal-canary-demo .
+
+      - name: Run the e2e demo offline (no API key, no network) and assert PASS
+        run: |
+          set -o pipefail
+          docker run --rm seal-canary-demo | tee demo-output.txt
+          grep -q "Kill/restore status.*PASS" demo-output.txt
+          grep -qE "^PASS:" demo-output.txt
