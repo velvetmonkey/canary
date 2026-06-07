@@ -9,6 +9,20 @@ CANARY wears two hats:
 1. **Host for the `seal` security demo.** It runs a real multi-stage LLM pipeline in front of [seal](https://github.com/velvetmonkey/mcp-seal), a verified MCP approval-gate sidecar, and proves a destructive vault write dies at a gate the model cannot influence. **Start here:** [Security Demo: seal x Canary](#security-demo-seal-x-canary).
 2. **A self-teaching LangGraph compliance pipeline.** It monitors financial regulation across 5 jurisdictions, extracts compliance obligations, and mechanically verifies every citation against the source text. The pipeline, the verification engine, and the 487 real extraction artifacts are the substance. See [The Canary Pipeline](#the-canary-pipeline).
 
+## Contents
+
+- [Security Demo: seal x Canary](#security-demo-seal-x-canary)
+  - [Two scenarios](#two-scenarios)
+  - [Run it in Docker, from scratch (WSL2)](#run-it-in-docker-from-scratch-wsl2)
+  - [Experiment with the approval config](#experiment-with-the-approval-config)
+  - [Run it natively (no Docker)](#run-it-natively-no-docker)
+- [The Canary Pipeline](#the-canary-pipeline)
+  - [The Big Idea: Verified Citations](#the-big-idea-verified-citations)
+  - [Coverage](#coverage)
+  - [Quick Start](#quick-start)
+- [Documentation](#documentation)
+- [Related repositories](#related-repositories)
+
 ---
 
 ## Security Demo: seal x Canary
@@ -316,6 +330,14 @@ See [Technology](docs/technology.md) for the full rationale behind each choice.
 - Scheduling — automated periodic runs via systemd/cron
 - Alerting — Slack/email notifications on change detection
 - Obligation tracking dashboard
+
+## Related repositories
+
+Part of the velvetmonkey verified-cognition stack:
+
+- **canary** (this repo) — the LangGraph compliance pipeline and host for the seal demo.
+- [mcp-seal](https://github.com/velvetmonkey/mcp-seal) — the verified MCP approval-gate sidecar the demo puts in front of the vault.
+- [flywheel-memory](https://github.com/velvetmonkey/flywheel-memory) — the knowledge-graph MCP server Canary writes to, and the server `seal` gates in the demo.
 
 ## License
 
