@@ -17,7 +17,7 @@
 # Stage 1: build the verified `seal` binary (Lean 4)
 ############################################################
 FROM debian:bookworm-slim AS seal-build
-ARG MCP_SEAL_REF=d10b626
+ARG MCP_SEAL_REF=8024b6f
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git curl ca-certificates build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -32,7 +32,7 @@ RUN git checkout ${MCP_SEAL_REF} && lake build      # -> .lake/build/bin/seal
 # Stage 2: build the flywheel-memory MCP server (Node)
 ############################################################
 FROM node:22-bookworm-slim AS flywheel-build
-ARG FLYWHEEL_REF=de8119e
+ARG FLYWHEEL_REF=ea49b0c
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 RUN git clone https://github.com/velvetmonkey/flywheel-memory /src/flywheel-memory

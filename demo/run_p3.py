@@ -131,13 +131,44 @@ def say(stream: str, message: str) -> None:
     print(f"[{stream}] {message}", flush=True)
 
 
+def load_policy() -> dict[str, Any]:
+    """The baked demo policy unless SEAL_POLICY points to a JSON file.
+
+    The approval control_file is always forced to the workspace location so the
+    runner's approval seeding keeps driving the gate, whatever else you change
+    (tool modes, match rules, targets, ttl_seconds)."""
+    override = os.environ.get("SEAL_POLICY")
+    if override and Path(override).expanduser().exists():
+        policy = json.loads(Path(override).expanduser().read_text(encoding="utf-8"))
+        policy.setdefault("approval", {})["control_file"] = str(APPROVALS)
+        say("SEAL", f"policy override loaded from {override}")
+        return policy
+    return POLICY_JSON
+
+
+def seed_extra_approvals() -> None:
+    """Append approval records from SEAL_EXTRA_APPROVALS (one JSON object per
+    line) on top of the auto-seeded create approval, so you can pre-approve
+    additional targets you have gated in a custom policy."""
+    extra = os.environ.get("SEAL_EXTRA_APPROVALS")
+    if not extra or not Path(extra).expanduser().exists():
+        return
+    lines = [ln.strip() for ln in Path(extra).expanduser().read_text(encoding="utf-8").splitlines() if ln.strip()]
+    if not lines:
+        return
+    with APPROVALS.open("a", encoding="utf-8") as fh:
+        for ln in lines:
+            fh.write(ln + "\n")
+    say("SEAL", f"appended {len(lines)} extra approval record(s) from {extra}")
+
+
 def clean_root() -> None:
     if ROOT.exists():
         shutil.rmtree(ROOT)
     (ROOT / "poisoned-corpus" / "sources").mkdir(parents=True)
     VAULT.mkdir(parents=True)
     APPROVALS.write_text("", encoding="utf-8")
-    POLICY.write_text(json.dumps(POLICY_JSON, indent=2), encoding="utf-8")
+    POLICY.write_text(json.dumps(load_policy(), indent=2), encoding="utf-8")
 
 
 def write_poisoned_source() -> None:
@@ -227,14 +258,12 @@ def result_text(result: Any) -> str:
     return str(normalized)
 
 
-def approval_target_from(result: Any) -> str:
+def approval_target_from(result: Any) -> str | None:
     match = re.search(r"approval required: ([0-9]+)", result_text(result))
-    if not match:
-        raise RuntimeError(f"could not extract approval target from: {result_text(result)}")
-    return match.group(1)
+    return match.group(1) if match else None
 
 
-async def seed_report_create_approval() -> str:
+async def seed_report_create_approval() -> str | None:
     say("SEAL", f"probing report create approval target for {REPORT_PATH}")
     client = MultiServerMCPClient({"flywheel": mcp_config("seed", VAULT, True)})
     async with client.session("flywheel") as session:
@@ -243,6 +272,12 @@ async def seed_report_create_approval() -> str:
             timeout=30,
         )
     target = approval_target_from(cold)
+    if target is None:
+        # The probe was not guarded: a custom policy may deny or allow this tool
+        # outright. Don't seed an approval; let the demo run and report what the
+        # policy actually does (useful when experimenting via SEAL_POLICY).
+        say("SEAL", f"probe not guarded, skipping approval seed (seal said: {result_text(cold).strip()[:120]})")
+        return None
     APPROVALS.write_text(json.dumps({"target": target}) + "\n", encoding="utf-8")
     say("SEAL", f"seeded trusted control-file approval target={target}")
     return target
@@ -337,7 +372,7 @@ async def kill_restore() -> dict[str, Any]:
     }
 
 
-def write_report(approval_target: str, canary: dict[str, Any], proof: dict[str, Any]) -> Path:
+def write_report(approval_target: str | None, canary: dict[str, Any], proof: dict[str, Any]) -> Path:
     pass_canary = canary["returncode"] == 0 and canary["report_exists"]
     pass_kill_restore = (
         proof["direct_before_exists"]
@@ -359,7 +394,7 @@ def write_report(approval_target: str, canary: dict[str, Any], proof: dict[str, 
         "## Seal In Path",
         "",
         f"- Effective server command: `{SEAL} --policy {POLICY} -- {NODE} {SERVER}`.",
-        f"- Trusted control-file approval seeded for Canary report create target: `{approval_target}`.",
+        f"- Trusted control-file approval seeded for Canary report create target: `{approval_target if approval_target is not None else 'none (probe was not guarded under the active policy)'}`.",
         f"- Canary run id: `{RUN_ID}`.",
         f"- Canary exit code: `{canary['returncode']}`.",
         f"- Report exists through seal: `{canary['report_exists']}`.",
@@ -410,6 +445,7 @@ async def main() -> int:
     write_poisoned_source()
     seed_change_db()
     approval_target = await seed_report_create_approval()
+    seed_extra_approvals()
     canary = run_canary_through_seal()
     proof = await kill_restore()
     report = write_report(approval_target, canary, proof)

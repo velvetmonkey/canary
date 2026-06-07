@@ -41,41 +41,109 @@ No `ANTHROPIC_API_KEY` and no network are required. The regulation corpus is fro
 
 Honest claim: a default-deny gate blocks the destructive action at a verified boundary the model cannot influence, and every allowed action is explicitly approved. It does **not** claim prompt-injection prevention; the model can still be fooled, the demo shows the action dies regardless. Full storyboard, prerequisites (the `seal` binary, Node, the Flywheel MCP server), and proof shots: [demo/DEMO.md](demo/DEMO.md).
 
-One command, nothing pre-built. Build the image, then run it with a host
-directory mounted at `/out` so the artifacts survive the container:
+### Run it in Docker, from scratch (WSL2)
+
+The image bundles all three repos (seal + flywheel-memory + canary) and builds
+them itself, so the only host dependency is Docker. From a clean WSL2 box:
+
+**1. Install Docker.** Either Docker Desktop with WSL integration enabled, or the
+native engine in the distro:
 
 ```bash
-docker build -t seal-canary-demo .
-docker run --rm -v "$(pwd)/demo-out:/out" seal-canary-demo
-ls demo-out/          # P3-REPORT.md, vault-canary/, demo-policy.json, approvals.ndjson, poisoned-corpus/
+curl -fsSL https://get.docker.com | sh    # let the 20s timer run, do NOT Ctrl+C
+sudo usermod -aG docker "$USER"
+newgrp docker                             # activate the group without a WSL restart
+sudo service docker start
+docker run --rm hello-world               # smoke test
 ```
 
-`demo-out/` then holds the full disposable workspace for inspection from the
-host: the generated report, the demo vault, the policy, the approvals control
-file, and the poisoned corpus used in the attack.
+**2. Fix DNS if clones fail.** If `curl` or the in-container `git clone` fail with
+`Could not resolve host`, a VPN (e.g. Tailscale) is hijacking resolution. Add a
+working resolver and make it stick:
+
+```bash
+echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
+printf '[network]\ngenerateResolvConf = false\n' | sudo tee -a /etc/wsl.conf
+```
+
+The Docker daemon inherits host DNS, so the in-container clones need this too.
+
+**3. Get the repo and build.** The first build is slow: it cold-compiles the
+Lean core.
+
+```bash
+git clone https://github.com/velvetmonkey/canary
+cd canary
+docker build -t seal-canary-demo .
+```
+
+**4. Run it, with the artifacts mounted to the host.**
+
+```bash
+docker run --rm -v "$(pwd)/demo-out:/out" seal-canary-demo
+ls demo-out/    # P3-REPORT.md, vault-canary/, demo-policy.json, approvals.ndjson, poisoned-corpus/
+```
+
+`demo-out/` holds the full disposable workspace: the generated report, the demo
+vault, the active policy, the approvals control file, and the poisoned corpus.
 
 Why the `/out` mount rather than binding the workspace directly: the runner
 rebuilds its workspace at `/tmp/seal-demo-p3` inside the container and wipes it
 (`rmtree`) on each start, so that path cannot be bind-mounted. The entrypoint
-copies the workspace to `/out` on exit instead, so it survives `--rm`. Without
-a mount the demo still runs and prints the report to stdout; the artifacts are
-just discarded on exit.
+copies the workspace to `/out` on exit instead, so it survives `--rm`. Without a
+mount the demo still runs and prints the report to stdout; artifacts are
+discarded on exit.
 
-### Running on WSL2
+### Experiment with the approval config
 
-The image builds and runs fine under Docker on WSL2. Two gotchas worth knowing:
+The policy is **not** baked into a rebuild. Mount your own at run time via
+`SEAL_POLICY` and iterate with zero rebuilds. The helper script wraps
+build-if-needed + run + mount + report tail:
 
-- **Docker:** either install Docker Desktop with WSL integration, or the native
-  engine in the distro (`curl -fsSL https://get.docker.com | sh`, let its 20s
-  timer run, then `sudo usermod -aG docker $USER` and `sudo service docker start`).
-- **Tailscale + DNS:** if `curl`/clones fail with `Could not resolve host`,
-  Tailscale's nameserver is hijacking resolution. Add a working resolver
-  (`echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf`) and make it stick by
-  disabling WSL's auto-generation: add a `[network]` section with
-  `generateResolvConf = false` to `/etc/wsl.conf`. The Docker daemon inherits
-  host DNS, so the in-container clones need this too.
+```bash
+demo/run-demo.sh                          # baked default policy
+demo/run-demo.sh my-policy.json           # your policy, no rebuild
+SEAL_EXTRA_APPROVALS=more.ndjson demo/run-demo.sh my-policy.json
+FORCE_BUILD=1 demo/run-demo.sh            # force an image rebuild
+```
 
-The container bundles all three repos (seal + flywheel-memory + canary) at pinned versions and runs the demo offline. It exists only to pull the multi-repo **demo** together reproducibly. **seal itself is a single native binary with no Docker dependency**: adoption is a one-line host config change, not a container.
+Or by hand:
+
+```bash
+docker run --rm \
+  -v "$(pwd)/my-policy.json:/cfg/policy.json:ro" -e SEAL_POLICY=/cfg/policy.json \
+  -v "$(pwd)/demo-out:/out" seal-canary-demo
+```
+
+A policy is JSON: an `approval` block (`ttl_seconds`, the control file is forced
+to the workspace automatically) and a list of `tools`, each with a `mode`
+(`guarded` | `deny` | `allow`), a `match` rule, and a capability `target`. The
+baked default guards `note/create`:
+
+```json
+{
+  "approval": { "ttl_seconds": 120 },
+  "tools": [
+    { "name": "note", "mode": "guarded",
+      "match": { "type": "contains_any_ci", "arg": "action", "needles": ["create"] },
+      "target": [ {"literal": "flywheel"}, {"literal": "note"}, {"literal": "create"} ] }
+  ]
+}
+```
+
+Try flipping `mode` to `deny`, gating `delete` instead of `create`, or changing
+`ttl_seconds`. The verdict (`PASS`/`FAIL`) and the full trace land in
+`demo-out/P3-REPORT.md`. A policy that denies or allows the probe outright is
+handled cleanly: the runner skips the approval seed and reports what the policy
+actually did, rather than erroring.
+
+`SEAL_EXTRA_APPROVALS` points at a file of newline-delimited approval records
+(`{"target": "<digits>"}` per line) appended on top of the auto-seeded create
+approval, for pre-approving extra targets you have gated.
+
+**seal itself is a single native binary with no Docker dependency**: the
+container exists only to pull the multi-repo demo together reproducibly.
+Adoption is a one-line host config change, not a container.
 
 ## The Big Idea: Verified Citations
 
