@@ -36,15 +36,41 @@ POLICY = ROOT / "demo-policy.json"
 APPROVALS = ROOT / "approvals.ndjson"
 POISONED_SOURCE = ROOT / "poisoned-corpus" / "sources" / "sfdr-l1.html"
 FIXTURE_EXTRACTION = Path(__file__).resolve().parent / "corpus" / "extraction" / "sfdr-l1.json"
-NODE = "/home/ben/.nvm/versions/node/v22.22.0/bin/node"
-SERVER = "/home/ben/flywheel/releases/current/packages/mcp-server/dist/index.js"
-SEAL = "/home/ben/src/mcp-seal/.lake/build/bin/seal"
+def _first_existing(candidates):
+    for c in candidates:
+        if c and Path(c).expanduser().exists():
+            return str(Path(c).expanduser())
+    return None
+
+
+# Dependencies are resolved at runtime, not hardcoded, so this runs on any
+# machine where the sibling repos are built (or via the env overrides below):
+#   SEAL_BIN          -> the seal binary
+#   NODE_BIN          -> the node binary (falls back to PATH)
+#   FLYWHEEL_SERVER   -> the flywheel-memory MCP server dist/index.js
+SRC = REPO.parent  # the directory holding canary/, mcp-seal/, flywheel-memory/
+
+NODE = os.environ.get("NODE_BIN") or shutil.which("node") or "node"
+
+SEAL = os.environ.get("SEAL_BIN") or _first_existing([
+    SRC / "mcp-seal" / ".lake" / "build" / "bin" / "seal",
+])
+SERVER = os.environ.get("FLYWHEEL_SERVER") or _first_existing([
+    SRC / "flywheel-memory" / "packages" / "mcp-server" / "dist" / "index.js",
+    Path.home() / "flywheel" / "releases" / "current" / "packages" / "mcp-server" / "dist" / "index.js",
+])
+
+if not SEAL:
+    sys.exit("seal binary not found. Build mcp-seal (`lake build`) or set SEAL_BIN.")
+if not SERVER:
+    sys.exit("flywheel MCP server not found. Build flywheel-memory or set FLYWHEEL_SERVER.")
+
 RUN_ID = "run-seal-p3"
 REPORT_PATH = f"work/compliance/reports/{date.today().isoformat()}-sfdr-l1.md"
 TARGET_NOTE = REPORT_PATH
 THEOREM = "SealCore.default_deny_never_allowed"
 V2_THEOREM = "SealV2.default_deny"
-AXIOM_SHOT = "/home/ben/src/mcp-seal/Test/V2M4Axioms.lean"
+AXIOM_SHOT = str(SRC / "mcp-seal" / "Test" / "V2M4Axioms.lean")
 
 
 POLICY_JSON = {
