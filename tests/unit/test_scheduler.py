@@ -81,6 +81,13 @@ class TestGetFetcher:
         fetcher = _get_fetcher("eurlex")
         assert isinstance(fetcher, EurLexFetcher)
 
+    def test_fixture_dir_overrides_fetcher_type(self, tmp_path):
+        from canary.fetchers.fixture import FixtureFetcher
+
+        with patch.dict("os.environ", {"CANARY_FIXTURE_DIR": str(tmp_path)}):
+            fetcher = _get_fetcher("eurlex")
+        assert isinstance(fetcher, FixtureFetcher)
+
     def test_unknown_fetcher_raises(self):
         try:
             _get_fetcher("unknown")

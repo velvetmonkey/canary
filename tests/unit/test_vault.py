@@ -42,6 +42,28 @@ class TestVaultWriter:
 
         assert await writer.check_duplicate("run-001") is True
 
+    async def test_check_duplicate_handles_mcp_text_block_empty_result(self):
+        writer = VaultWriter()
+        mock_search = AsyncMock()
+        mock_search.ainvoke = AsyncMock(return_value=[{
+            "type": "text",
+            "text": '{"method":"hybrid","total_results":0,"results":[]}',
+        }])
+        writer._tools = {"search": mock_search}
+
+        assert await writer.check_duplicate("run-001") is False
+
+    async def test_check_duplicate_handles_mcp_text_block_found_result(self):
+        writer = VaultWriter()
+        mock_search = AsyncMock()
+        mock_search.ainvoke = AsyncMock(return_value=[{
+            "type": "text",
+            "text": '{"method":"hybrid","total_results":1,"results":[{"path":"report.md"}]}',
+        }])
+        writer._tools = {"search": mock_search}
+
+        assert await writer.check_duplicate("run-001") is True
+
     async def test_check_duplicate_returns_false_on_error(self):
         writer = VaultWriter()
         mock_search = AsyncMock()
@@ -71,6 +93,21 @@ class TestVaultWriter:
         assert result is not None
         assert "SFDR-L1" in result
         mock_create.ainvoke.assert_called_once()
+
+    async def test_write_report_creates_note_with_current_note_tool(self):
+        writer = VaultWriter()
+        mock_search = AsyncMock()
+        mock_search.ainvoke = AsyncMock(return_value={"results": []})
+        mock_note = AsyncMock()
+        mock_note.ainvoke = AsyncMock(return_value=None)
+        writer._tools = {"search": mock_search, "note": mock_note}
+
+        result = await writer.write_report("# Report", "SFDR-L1", "run-new")
+        assert result is not None
+        call_args = mock_note.ainvoke.call_args[0][0]
+        assert call_args["action"] == "create"
+        assert call_args["path"] == result
+        assert call_args["overwrite"] is True
 
     async def test_write_report_returns_none_on_error(self):
         writer = VaultWriter()

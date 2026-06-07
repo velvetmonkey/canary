@@ -62,6 +62,11 @@ def _resolve_model(args_model: str | None) -> str:
 
 def _get_fetcher(fetcher_type: str) -> BaseFetcher:
     """Factory for fetcher instances based on type string."""
+    fixture_dir = os.environ.get("CANARY_FIXTURE_DIR")
+    if fixture_dir:
+        from canary.fetchers.fixture import FixtureFetcher
+        return FixtureFetcher(fixture_dir)
+
     if fetcher_type == "eurlex":
         return EurLexFetcher()
     if fetcher_type == "ukleg":

@@ -4,6 +4,7 @@ Uses langchain-mcp-adapters to connect to the flywheel-memory MCP server
 via stdio transport and invoke vault tools directly.
 """
 
+import json
 import logging
 import os
 import re
@@ -36,9 +37,33 @@ def _split_frontmatter(markdown: str) -> tuple[dict, str]:
         return {}, markdown
     return fm, body
 
+
+def _search_results(result: Any) -> list[dict]:
+    """Normalize Flywheel search responses across MCP adapter shapes."""
+    if isinstance(result, str):
+        try:
+            result = json.loads(result)
+        except (ValueError, TypeError):
+            return []
+
+    if isinstance(result, dict):
+        notes = result.get("notes", result.get("results", []))
+        return notes if isinstance(notes, list) else []
+
+    if isinstance(result, list):
+        # langchain-mcp-adapters can wrap tool output as text content blocks.
+        if all(isinstance(item, dict) and "text" in item for item in result):
+            normalized: list[dict] = []
+            for item in result:
+                normalized.extend(_search_results(item["text"]))
+            return normalized
+        return result
+
+    return []
+
 # Default path to flywheel-memory MCP server
 DEFAULT_MCP_SERVER = os.path.expanduser(
-    "~/src/flywheel-memory/packages/mcp-server/dist/index.js"
+    "/home/ben/flywheel/releases/current/packages/mcp-server/dist/index.js"
 )
 DEFAULT_VAULT_PATH = os.path.expanduser("~/obsidian/Canary")
 DEFAULT_OUTPUT_ROOT = "work/compliance"
@@ -101,23 +126,19 @@ class VaultWriter:
             raise RuntimeError(f"Tool '{name}' not found. Available: {available}")
         return await tool.ainvoke(args)
 
+    async def _create_note(self, args: dict[str, Any]) -> Any:
+        """Create a note using either legacy or current Flywheel MCP tools."""
+        if "vault_create_note" in self._tools:
+            return await self._call_tool("vault_create_note", args)
+        return await self._call_tool("note", {"action": "create", **args})
+
     async def search_by_type(self, type_name: str, limit: int = 50) -> list[dict]:
         """Search vault for notes matching a given type."""
         result = await self._call_tool(
             "search",
             {"query": type_name, "where": {"type": type_name}, "limit": limit},
         )
-        if isinstance(result, str):
-            import json as _json
-            try:
-                result = _json.loads(result)
-            except (ValueError, TypeError):
-                return []
-        if isinstance(result, dict):
-            return result.get("notes", result.get("results", []))
-        if isinstance(result, list):
-            return result
-        return []
+        return _search_results(result)
 
     async def check_duplicate(self, run_id: str) -> bool:
         """Check if a report with this run_id already exists in the vault."""
@@ -126,10 +147,7 @@ class VaultWriter:
                 "search",
                 {"query": f"canary_run_id: {run_id}", "scope": "content", "limit": 1},
             )
-            if isinstance(result, dict) and result.get("results"):
-                return True
-            if isinstance(result, list) and len(result) > 0:
-                return True
+            return bool(_search_results(result))
         except Exception as e:
             logger.warning("Duplicate check failed: %s", e)
         return False
@@ -157,15 +175,12 @@ class VaultWriter:
         frontmatter, body = _split_frontmatter(report_md)
 
         try:
-            result = await self._call_tool(
-                "vault_create_note",
-                {
-                    "path": note_path,
-                    "content": body,
-                    "frontmatter": frontmatter,
-                    "overwrite": True,
-                },
-            )
+            result = await self._create_note({
+                "path": note_path,
+                "content": body,
+                "frontmatter": frontmatter,
+                "overwrite": True,
+            })
             self._log_vault_result("report", note_path, result)
             return note_path
         except Exception as e:
@@ -192,16 +207,13 @@ class VaultWriter:
         frontmatter, body = _split_frontmatter(note_md)
 
         try:
-            result = await self._call_tool(
-                "vault_create_note",
-                {
-                    "path": note_path,
-                    "content": body,
-                    "frontmatter": frontmatter,
-                    "overwrite": True,
-                    "suggestOutgoingLinks": True,
-                },
-            )
+            result = await self._create_note({
+                "path": note_path,
+                "content": body,
+                "frontmatter": frontmatter,
+                "overwrite": True,
+                "suggestOutgoingLinks": True,
+            })
             self._log_vault_result("objective", note_path, result)
             return note_path
         except Exception as e:
@@ -219,16 +231,13 @@ class VaultWriter:
         """
         frontmatter, body = _split_frontmatter(readme_md)
         try:
-            result = await self._call_tool(
-                "vault_create_note",
-                {
-                    "path": path,
-                    "content": body,
-                    "frontmatter": frontmatter,
-                    "overwrite": True,
-                    "suggestOutgoingLinks": True,
-                },
-            )
+            result = await self._create_note({
+                "path": path,
+                "content": body,
+                "frontmatter": frontmatter,
+                "overwrite": True,
+                "suggestOutgoingLinks": True,
+            })
             self._log_vault_result("readme", path, result)
             return path
         except Exception as e:
