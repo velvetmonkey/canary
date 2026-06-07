@@ -96,7 +96,7 @@ async def run_canary(
     """
     load_dotenv()
 
-    run_id = f"run-{uuid.uuid4().hex[:12]}"
+    run_id = os.environ.get("CANARY_RUN_ID") or f"run-{uuid.uuid4().hex[:12]}"
     issues = IssueCollector(run_id=run_id)
 
     # Configure LangSmith tracing
@@ -337,7 +337,7 @@ async def run_extract_objectives(
 
     load_dotenv()
 
-    run_id = f"obj-{uuid.uuid4().hex[:12]}"
+    run_id = os.environ.get("CANARY_RUN_ID") or f"obj-{uuid.uuid4().hex[:12]}"
     issues = IssueCollector(run_id=run_id)
     configure_langsmith(run_id)
 

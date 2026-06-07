@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from canary.output.vault import VaultWriter
+from canary.output.vault import VaultWriter, _server_command
 
 
 class TestVaultWriter:
@@ -76,7 +76,7 @@ class TestVaultWriter:
         writer = VaultWriter()
         mock_search = AsyncMock()
         mock_search.ainvoke = AsyncMock(return_value={"results": [{"path": "existing.md"}]})
-        writer._tools = {"search": mock_search, "vault_create_note": AsyncMock()}
+        writer._tools = {"search": mock_search, "note": AsyncMock()}
 
         result = await writer.write_report("# Report", "SFDR-L1", "run-dup")
         assert result is None
@@ -87,7 +87,7 @@ class TestVaultWriter:
         mock_search.ainvoke = AsyncMock(return_value={"results": []})
         mock_create = AsyncMock()
         mock_create.ainvoke = AsyncMock(return_value=None)
-        writer._tools = {"search": mock_search, "vault_create_note": mock_create}
+        writer._tools = {"search": mock_search, "note": mock_create}
 
         result = await writer.write_report("# Report", "SFDR-L1", "run-new")
         assert result is not None
@@ -115,28 +115,32 @@ class TestVaultWriter:
         mock_search.ainvoke = AsyncMock(return_value={"results": []})
         mock_create = AsyncMock()
         mock_create.ainvoke = AsyncMock(side_effect=Exception("write failed"))
-        writer._tools = {"search": mock_search, "vault_create_note": mock_create}
+        writer._tools = {"search": mock_search, "note": mock_create}
 
         result = await writer.write_report("# Report", "SFDR-L1", "run-err")
         assert result is None
 
-    async def test_log_to_daily_calls_add_to_section(self):
+    async def test_log_to_daily_calls_edit_section_add(self):
         writer = VaultWriter()
         mock_add = AsyncMock()
         mock_add.ainvoke = AsyncMock(return_value=None)
-        writer._tools = {"vault_add_to_section": mock_add}
+        writer._tools = {"edit_section": mock_add}
 
         await writer.log_to_daily("CANARY detected 1 change")
         mock_add.ainvoke.assert_called_once()
         call_args = mock_add.ainvoke.call_args[0][0]
+        assert call_args["action"] == "add"
         assert call_args["section"] == "Log"
+        assert call_args["create_if_missing"] is True
+        assert call_args["format"] == "timestamp-bullet"
+        assert call_args["skipWikilinks"] is True
         assert "CANARY detected" in call_args["content"]
 
     async def test_log_to_daily_handles_error(self):
         writer = VaultWriter()
         mock_add = AsyncMock()
         mock_add.ainvoke = AsyncMock(side_effect=Exception("daily note missing"))
-        writer._tools = {"vault_add_to_section": mock_add}
+        writer._tools = {"edit_section": mock_add}
 
         # Should not raise
         await writer.log_to_daily("test message")
@@ -157,7 +161,7 @@ class TestVaultWriter:
         mock_search.ainvoke = AsyncMock(return_value={"results": []})
         mock_create = AsyncMock()
         mock_create.ainvoke = AsyncMock(return_value=None)
-        writer._tools = {"search": mock_search, "vault_create_note": mock_create}
+        writer._tools = {"search": mock_search, "note": mock_create}
 
         path = await writer.write_objective("# Note", "Article 4(1)(a)", "sfdr-l1")
         assert path is not None
@@ -170,7 +174,7 @@ class TestVaultWriter:
         writer = VaultWriter()
         mock_create = AsyncMock()
         mock_create.ainvoke = AsyncMock(return_value=None)
-        writer._tools = {"vault_create_note": mock_create}
+        writer._tools = {"note": mock_create}
 
         path = await writer.write_objective("# Note", "Article 8(2)(b)(iii)", "sfdr-l1")
         assert path is not None
@@ -184,7 +188,7 @@ class TestVaultWriter:
         writer = VaultWriter()
         mock_create = AsyncMock()
         mock_create.ainvoke = AsyncMock(return_value=None)
-        writer._tools = {"vault_create_note": mock_create}
+        writer._tools = {"note": mock_create}
 
         await writer.write_objective("# Note", "Article 3", "sfdr-l1")
         call_args = mock_create.ainvoke.call_args[0][0]
@@ -196,7 +200,7 @@ class TestVaultWriter:
         writer = VaultWriter()
         mock_create = AsyncMock()
         mock_create.ainvoke = AsyncMock(return_value=None)
-        writer._tools = {"vault_create_note": mock_create}
+        writer._tools = {"note": mock_create}
 
         path = await writer.write_objective("# Note", "Article 3", "sfdr-l1")
         assert path is not None
@@ -206,7 +210,7 @@ class TestVaultWriter:
         writer = VaultWriter()
         mock_create = AsyncMock()
         mock_create.ainvoke = AsyncMock(return_value=None)
-        writer._tools = {"vault_create_note": mock_create}
+        writer._tools = {"note": mock_create}
 
         readme = "---\ntype: regulation-index\n---\n\n# SFDR"
         path = await writer.write_readme(readme, "work/compliance/objectives/sfdr/README.md")
@@ -220,7 +224,7 @@ class TestVaultWriter:
         writer = VaultWriter()
         mock_create = AsyncMock()
         mock_create.ainvoke = AsyncMock(side_effect=Exception("write failed"))
-        writer._tools = {"vault_create_note": mock_create}
+        writer._tools = {"note": mock_create}
 
         result = await writer.write_readme("# README", "some/path.md")
         assert result is None
@@ -257,3 +261,17 @@ class TestVaultWriter:
 
         with pytest.raises(Exception):
             await writer.search_by_type("regulation-index")
+
+    def test_server_command_plain_js(self):
+        command, args = _server_command("/tmp/server.js")
+
+        assert command == "node"
+        assert args == ["/tmp/server.js"]
+
+    def test_server_command_full_command_line(self):
+        command, args = _server_command(
+            '/tmp/seal --policy "/tmp/demo policy.json" -- node /tmp/server.js'
+        )
+
+        assert command == "/tmp/seal"
+        assert args == ["--policy", "/tmp/demo policy.json", "--", "node", "/tmp/server.js"]

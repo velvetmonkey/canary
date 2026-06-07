@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import shlex
 from datetime import date
 from typing import Any
 
@@ -70,6 +71,20 @@ DEFAULT_OUTPUT_ROOT = "work/compliance"
 DEFAULT_DAILY_ROOT = "daily-notes"
 
 
+def _server_command(server_path: str) -> tuple[str, list[str]]:
+    """Build the stdio MCP command.
+
+    CANARY_MCP_SERVER normally points at the Flywheel server JS file. For demos it
+    may point at a full command line, such as seal wrapping node and the server.
+    """
+    if any(char.isspace() for char in server_path):
+        parts = shlex.split(server_path)
+        if not parts:
+            raise RuntimeError("CANARY_MCP_SERVER command is empty")
+        return parts[0], parts[1:]
+    return "node", [server_path]
+
+
 class VaultWriter:
     """Writes CANARY reports to Obsidian vault via Flywheel MCP."""
 
@@ -98,11 +113,12 @@ class VaultWriter:
             "PROJECT_PATH": self._vault_path,
             "FLYWHEEL_PRESET": "writer",
         }
+        command, args = _server_command(self._server_path)
         self._client = MultiServerMCPClient(
             {
                 "flywheel": {
-                    "command": "node",
-                    "args": [self._server_path],
+                    "command": command,
+                    "args": args,
                     "transport": "stdio",
                     "env": env,
                     "cwd": self._vault_path,
@@ -127,9 +143,7 @@ class VaultWriter:
         return await tool.ainvoke(args)
 
     async def _create_note(self, args: dict[str, Any]) -> Any:
-        """Create a note using either legacy or current Flywheel MCP tools."""
-        if "vault_create_note" in self._tools:
-            return await self._call_tool("vault_create_note", args)
+        """Create a note with the current Flywheel MCP note tool."""
         return await self._call_tool("note", {"action": "create", **args})
 
     async def search_by_type(self, type_name: str, limit: int = 50) -> list[dict]:
@@ -262,11 +276,13 @@ class VaultWriter:
 
         try:
             await self._call_tool(
-                "vault_add_to_section",
+                "edit_section",
                 {
+                    "action": "add",
                     "path": daily_path,
                     "section": "Log",
                     "content": message,
+                    "create_if_missing": True,
                     "format": "timestamp-bullet",
                     "skipWikilinks": True,
                 },
