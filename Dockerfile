@@ -6,6 +6,11 @@
 # Runs fully offline: no ANTHROPIC_API_KEY, no network at run time.
 # Prints the P3 report ending in a PASS/FAIL line.
 #
+# To inspect the artifacts (corpus, vault, policy, approvals control file,
+# P3-REPORT.md) from the host AFTER the run, mount a host dir at /out:
+#   docker run --rm -v "$(pwd)/demo-out:/out" seal-canary-demo
+# The entrypoint copies the disposable workspace there on exit.
+#
 # Pins are build args so the image is reproducible; bump them as the repos move.
 
 ############################################################
@@ -54,10 +59,11 @@ COPY --from=flywheel-build /src/flywheel-memory /src/flywheel-memory
 COPY . /src/canary
 WORKDIR /src/canary
 RUN uv sync --frozen || uv sync
+RUN chmod +x demo/docker-entrypoint.sh
 
 # run_p3.py also discovers these via sibling layout; set explicitly as belt-and-braces
 ENV SEAL_BIN=/src/mcp-seal/.lake/build/bin/seal \
     FLYWHEEL_SERVER=/src/flywheel-memory/packages/mcp-server/dist/index.js \
     NODE_BIN=/usr/local/bin/node
 
-ENTRYPOINT ["uv", "run", "python", "demo/run_p3.py"]
+ENTRYPOINT ["/src/canary/demo/docker-entrypoint.sh"]

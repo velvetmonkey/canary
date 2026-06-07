@@ -47,6 +47,15 @@ One command, nothing pre-built:
 docker build -t seal-canary-demo . && docker run --rm seal-canary-demo
 ```
 
+To inspect the artifacts (corpus, vault, policy, the approvals control file, and `P3-REPORT.md`) from the host after the run, mount a directory at `/out`:
+
+```bash
+docker run --rm -v "$(pwd)/demo-out:/out" seal-canary-demo
+ls demo-out/          # P3-REPORT.md, vault-canary/, demo-policy.json, approvals.ndjson, poisoned-corpus/
+```
+
+The runner rebuilds its workspace at `/tmp/seal-demo-p3` inside the container (which it wipes on each start, so it cannot be bind-mounted directly); the entrypoint copies that workspace to `/out` on exit so it survives `--rm`.
+
 The container bundles all three repos (seal + flywheel-memory + canary) at pinned versions and runs the demo offline. It exists only to pull the multi-repo **demo** together reproducibly. **seal itself is a single native binary with no Docker dependency**: adoption is a one-line host config change, not a container.
 
 ## The Big Idea: Verified Citations
