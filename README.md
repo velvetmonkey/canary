@@ -41,20 +41,39 @@ No `ANTHROPIC_API_KEY` and no network are required. The regulation corpus is fro
 
 Honest claim: a default-deny gate blocks the destructive action at a verified boundary the model cannot influence, and every allowed action is explicitly approved. It does **not** claim prompt-injection prevention; the model can still be fooled, the demo shows the action dies regardless. Full storyboard, prerequisites (the `seal` binary, Node, the Flywheel MCP server), and proof shots: [demo/DEMO.md](demo/DEMO.md).
 
-One command, nothing pre-built:
+One command, nothing pre-built. Build the image, then run it with a host
+directory mounted at `/out` so the artifacts survive the container:
 
 ```bash
-docker build -t seal-canary-demo . && docker run --rm seal-canary-demo
-```
-
-To inspect the artifacts (corpus, vault, policy, the approvals control file, and `P3-REPORT.md`) from the host after the run, mount a directory at `/out`:
-
-```bash
+docker build -t seal-canary-demo .
 docker run --rm -v "$(pwd)/demo-out:/out" seal-canary-demo
 ls demo-out/          # P3-REPORT.md, vault-canary/, demo-policy.json, approvals.ndjson, poisoned-corpus/
 ```
 
-The runner rebuilds its workspace at `/tmp/seal-demo-p3` inside the container (which it wipes on each start, so it cannot be bind-mounted directly); the entrypoint copies that workspace to `/out` on exit so it survives `--rm`.
+`demo-out/` then holds the full disposable workspace for inspection from the
+host: the generated report, the demo vault, the policy, the approvals control
+file, and the poisoned corpus used in the attack.
+
+Why the `/out` mount rather than binding the workspace directly: the runner
+rebuilds its workspace at `/tmp/seal-demo-p3` inside the container and wipes it
+(`rmtree`) on each start, so that path cannot be bind-mounted. The entrypoint
+copies the workspace to `/out` on exit instead, so it survives `--rm`. Without
+a mount the demo still runs and prints the report to stdout; the artifacts are
+just discarded on exit.
+
+### Running on WSL2
+
+The image builds and runs fine under Docker on WSL2. Two gotchas worth knowing:
+
+- **Docker:** either install Docker Desktop with WSL integration, or the native
+  engine in the distro (`curl -fsSL https://get.docker.com | sh`, let its 20s
+  timer run, then `sudo usermod -aG docker $USER` and `sudo service docker start`).
+- **Tailscale + DNS:** if `curl`/clones fail with `Could not resolve host`,
+  Tailscale's nameserver is hijacking resolution. Add a working resolver
+  (`echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf`) and make it stick by
+  disabling WSL's auto-generation: add a `[network]` section with
+  `generateResolvConf = false` to `/etc/wsl.conf`. The Docker daemon inherits
+  host DNS, so the in-container clones need this too.
 
 The container bundles all three repos (seal + flywheel-memory + canary) at pinned versions and runs the demo offline. It exists only to pull the multi-repo **demo** together reproducibly. **seal itself is a single native binary with no Docker dependency**: adoption is a one-line host config change, not a container.
 
