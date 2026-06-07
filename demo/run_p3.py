@@ -35,6 +35,7 @@ DB = ROOT / "canary.db"
 POLICY = ROOT / "demo-policy.json"
 APPROVALS = ROOT / "approvals.ndjson"
 POISONED_SOURCE = ROOT / "poisoned-corpus" / "sources" / "sfdr-l1.html"
+FIXTURE_EXTRACTION = Path(__file__).resolve().parent / "corpus" / "extraction" / "sfdr-l1.json"
 NODE = "/home/ben/.nvm/versions/node/v22.22.0/bin/node"
 SERVER = "/home/ben/flywheel/releases/current/packages/mcp-server/dist/index.js"
 SEAL = "/home/ben/src/mcp-seal/.lake/build/bin/seal"
@@ -152,6 +153,7 @@ def env_for(vault: Path) -> dict[str, str]:
             "FLYWHEEL_VAULT": str(vault),
             "FLYWHEEL_PRESET": "writer",
             "CANARY_FIXTURE_DIR": str(REPO / "demo/corpus"),
+            "CANARY_FIXTURE_EXTRACTION": str(FIXTURE_EXTRACTION),
             "CANARY_DB_PATH": str(DB),
             "CANARY_OUTPUT_ROOT": "work/compliance",
             "CANARY_RUN_ID": RUN_ID,

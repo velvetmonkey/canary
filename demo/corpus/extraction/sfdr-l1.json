@@ -1,0 +1,18 @@
+{
+  "changes": [
+    {
+      "change_type": "amendment",
+      "affected_articles": ["Article 6(1)"],
+      "effective_date": null,
+      "materiality": "high",
+      "materiality_rationale": "Reinstates a mandatory pre-contractual disclosure of how sustainability risks affect product returns, directly affecting Article 8/9 fund documentation.",
+      "supporting_quotes": [
+        "the results of the assessment of the likely impacts of sustainability risks on the returns of the financial products they make available."
+      ],
+      "source_section": "Article 6(1)",
+      "confidence": 0.95
+    }
+  ],
+  "source_celex_id": "32019R2088",
+  "summary": "Article 6(1) pre-contractual disclosure on the impact of sustainability risks on product returns reinstated."
+}

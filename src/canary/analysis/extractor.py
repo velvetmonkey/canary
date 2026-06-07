@@ -1,8 +1,11 @@
 """LLM-based regulatory change extraction using Claude with structured output."""
 
+import json
 import logging
+import os
 import time
 from dataclasses import dataclass
+from pathlib import Path
 
 import anthropic
 from langchain_anthropic import ChatAnthropic
@@ -74,7 +77,20 @@ async def extract_changes(
 
     Uses Claude with Pydantic structured output to ensure schema compliance.
     Returns (extraction_result, metrics).
+
+    Offline mode: if CANARY_FIXTURE_EXTRACTION points at a JSON file holding an
+    ExtractionResult, the result is replayed from disk and no LLM call is made
+    (no API key required). Mirrors FixtureFetcher for deterministic demo runs.
     """
+    fixture_path = os.environ.get("CANARY_FIXTURE_EXTRACTION")
+    if fixture_path:
+        data = json.loads(Path(fixture_path).expanduser().read_text(encoding="utf-8"))
+        extraction = ExtractionResult.model_validate(data)
+        logger.info("Extraction replayed from fixture %s (no LLM call)", fixture_path)
+        return extraction, ExtractionMetrics(
+            model="fixture", duration_ms=0.0, input_tokens=0, output_tokens=0
+        )
+
     llm = ChatAnthropic(model=model, temperature=0, max_tokens=4096)
     structured_llm = llm.with_structured_output(ExtractionResult, include_raw=True)
 
