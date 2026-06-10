@@ -65,24 +65,29 @@ printf '[network]\ngenerateResolvConf = false\n' | sudo tee -a /etc/wsl.conf
 
 The Docker daemon inherits host DNS, so the in-container clones need this too.
 
-**3. Get the repo and build.** The first build is slow: it cold-compiles the Lean core.
+**3. Clone and run, one command.** `demo/run-demo.sh` builds the image if it is missing, runs the demo, mounts the artifacts to `./demo-out`, and tails the report. The first run is slow: it cold-compiles the Lean core. Every run after reuses the image.
 
 ```bash
 git clone https://github.com/velvetmonkey/canary
 cd canary
-docker build -t seal-canary-demo .
-```
-
-**4. Run it, with the artifacts mounted to the host.**
-
-```bash
-docker run --rm -v "$(pwd)/demo-out:/out" seal-canary-demo
+demo/run-demo.sh
 ls demo-out/    # P3-REPORT.md, vault-canary/, demo-policy.json, approvals.ndjson, poisoned-corpus/
 ```
 
-`demo-out/` holds the full disposable workspace: the generated report, the demo vault, the active policy, the approvals control file, and the poisoned corpus.
+That is the whole demo. `demo-out/` holds the full disposable workspace: the generated report, the demo vault, the active policy, the approvals control file, and the poisoned corpus.
+
+<details>
+<summary>What the script runs under the hood (manual build + run)</summary>
+
+```bash
+docker build -t seal-canary-demo .                          # once; slow cold Lean compile
+docker run --rm -v "$(pwd)/demo-out:/out" seal-canary-demo  # every run
+```
+
+`docker run <image>` does **not** build the image for you, so a bare `docker run seal-canary-demo` on a clean box fails with `pull access denied` (the image is local-only, never pushed to a registry). Build first, or just use `demo/run-demo.sh` which handles it.
 
 Why the `/out` mount rather than binding the workspace directly: the runner rebuilds its workspace at `/tmp/seal-demo-p3` inside the container and wipes it (`rmtree`) on each start, so that path cannot be bind-mounted. The entrypoint copies the workspace to `/out` on exit instead, so it survives `--rm`. Without a mount the demo still runs and prints the report to stdout; artifacts are discarded on exit.
+</details>
 
 ### Experiment with the approval config
 
