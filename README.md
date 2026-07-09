@@ -342,7 +342,6 @@ Part of the velvetmonkey verified-cognition stack:
 
 - **canary** (this repo) — the LangGraph compliance pipeline and host for the seal demo.
 - [mcp-seal](https://github.com/velvetmonkey/mcp-seal) — the verified MCP approval-gate sidecar the demo puts in front of the vault.
-- [flywheel-memory](https://github.com/velvetmonkey/flywheel-memory) — the knowledge-graph MCP server Canary writes to, and the server `seal` gates in the demo.
 
 ## License
 
