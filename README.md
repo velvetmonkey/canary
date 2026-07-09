@@ -33,6 +33,8 @@ The demo runs **fully offline**: no `ANTHROPIC_API_KEY`, no network. The regulat
 
 **Honest claim:** a default-deny gate blocks the destructive action at a verified boundary the model cannot influence, and every allowed action is explicitly approved. It does **not** claim prompt-injection prevention. The model can still be fooled; the demo shows the action dies regardless. Full storyboard and proof shots: [demo/DEMO.md](demo/DEMO.md).
 
+**The bigger picture:** Seal is the approval gateway for agentic tool use — it lets agents read and reason, but forces every protected external effect through an exact, recorded, checkable approval boundary. This public demo shows the frozen open-source kernel ([mcp-seal](https://github.com/velvetmonkey/mcp-seal)); the wider Seal family (deployable Rust host, browser receipt verifier, assurance CLI, live-agent demo, and the one-table claims matrix) is currently private and resolves only for authorised evaluators.
+
 ### Two scenarios
 
 The demo has two scenarios, selected by the `SEAL_SCENARIO` environment variable (or `SCENARIO=` via the helper script):
