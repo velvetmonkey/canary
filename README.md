@@ -1,5 +1,7 @@
 # CANARY
 
+[![e2e-demo (container)](https://github.com/velvetmonkey/canary/actions/workflows/e2e-demo.yml/badge.svg)](https://github.com/velvetmonkey/canary/actions/workflows/e2e-demo.yml)
+
 [![CI](https://github.com/velvetmonkey/canary/actions/workflows/ci.yml/badge.svg)](https://github.com/velvetmonkey/canary/actions/workflows/ci.yml)
 
 **C**ompliance **AN**alysis and **A**utomated **R**egulatory **Y**ield
